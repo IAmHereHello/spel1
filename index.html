@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Geometry Defender: Bloom Edition</title>
+    <title>Geometry Defender: Balance Edition</title>
     <style>
         body {
             margin: 0;
@@ -25,7 +25,6 @@
             display: none;
         }
         
-        /* UI Elementen */
         #ui {
             margin-top: 10px;
             display: flex;
@@ -57,7 +56,6 @@
         
         #lives { color: #ff4757; font-weight: bold; text-shadow: 0 0 5px red; }
 
-        /* MENU STIJLEN */
         .overlay-screen {
             position: absolute;
             top: 50%;
@@ -86,52 +84,36 @@
             transition: 0.2s;
             border-radius: 8px;
         }
-        .mode-btn:hover {
-            background: #4ecca3;
-            color: #000;
-            transform: scale(1.05);
-        }
-        
-        /* Specifieke kleur voor de Math knop om hem te laten opvallen */
-        .mode-btn.math {
-            border-color: #9b59b6;
-            color: #9b59b6;
-        }
-        .mode-btn.math:hover {
-            background: #9b59b6;
-            color: white;
-        }
+        .mode-btn:hover { background: #4ecca3; color: #000; transform: scale(1.05); }
+        .mode-btn.math { border-color: #9b59b6; color: #9b59b6; }
+        .mode-btn.math:hover { background: #9b59b6; color: white; }
         
         h1 { margin-top: 0; color: #4ecca3; }
-        
         #game-over { display: none; border-color: #ff4757; }
         .restart-btn { background: #ff4757; color: white; border: none; }
         .restart-btn:hover { background: #ff6b81; }
-
     </style>
 </head>
 <body>
 
-    <h2>Geometry Defender: Bloom Edition</h2>
+    <h2>Geometry Defender</h2>
     
     <div id="main-menu" class="overlay-screen">
         <h1>Kies Missie</h1>
-        <button class="mode-btn" onclick="startGame('hoeken')">1. Hoeken Herkennen</button>
-        <button class="mode-btn" onclick="startGame('driehoeken')">2. Driehoeken Zien</button>
-        <button class="mode-btn math" onclick="startGame('rekenen')">3. Rekensom (Bloom Lvl 3)</button>
+        <button class="mode-btn" onclick="startGame('hoeken')">1. Hoeken Herkennen (Actie)</button>
+        <button class="mode-btn" onclick="startGame('driehoeken')">2. Driehoeken Zien (Actie)</button>
+        <button class="mode-btn math" onclick="startGame('rekenen')">3. Rekensom (Rustig)</button>
     </div>
 
     <div id="game-over" class="overlay-screen">
         <h1 style="color: #ff4757;">GAME OVER</h1>
         <p style="font-size: 24px;">Score: <span id="final-score">0</span></p>
-        <p>Moeilijkheidsgraad: <span id="final-diff">0</span>%</p>
         <button class="mode-btn restart-btn" onclick="location.reload()">Hoofdmenu</button>
     </div>
 
     <div id="ui">
         <div>Score: <span id="score">0</span></div>
         <div id="lives">Levens: ❤️❤️❤️❤️</div>
-        
         <div id="ui-1" class="ammo-type">1</div>
         <div id="ui-2" class="ammo-type">2</div>
         <div id="ui-3" class="ammo-type">3</div>
@@ -141,7 +123,6 @@
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
 <script>
-/* --- AUDIO SYSTEEM --- */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -176,10 +157,10 @@ function playSound(type) {
     }
 }
 
-/* --- GAME DATA --- */
 const GAME_MODES = {
     'hoeken': {
         name: 'Hoeken',
+        speedMultiplier: 1.0, // Normale snelheid
         types: {
             'type1': { label: 'Scherp', color: '#2ecc71', logic: 'angle', min: 15, max: 85 },
             'type2': { label: 'Recht', color: '#3498db', logic: 'angle', min: 90, max: 90 },
@@ -189,6 +170,7 @@ const GAME_MODES = {
     },
     'driehoeken': {
         name: 'Driehoeken',
+        speedMultiplier: 1.0, // Normale snelheid
         types: {
             'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' },
             'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' },
@@ -198,6 +180,7 @@ const GAME_MODES = {
     },
     'rekenen': {
         name: 'Rekenen',
+        speedMultiplier: 0.3, // HEEL TRAAG (30% van normaal)
         types: {
             'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'math_eq' },
             'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'math_iso' },
@@ -207,7 +190,6 @@ const GAME_MODES = {
     }
 };
 
-/* --- VARIABELEN --- */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let currentMode = null;
@@ -233,8 +215,6 @@ for(let i=0; i<80; i++) {
         speed: Math.random() * 3 + 1
     });
 }
-
-/* --- FUNCTIES --- */
 
 function startGame(modeKey) {
     currentMode = GAME_MODES[modeKey];
@@ -280,8 +260,6 @@ function switchWeapon(typeKey) {
     activeEl.style.borderColor = "white";
 }
 
-/* --- CLASSES --- */
-
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y; this.color = color;
@@ -298,24 +276,33 @@ class Particle {
 
 class Enemy {
     constructor() {
-        this.x = Math.random() * (canvas.width - 90) + 20; // Iets meer marge voor tekst
+        this.x = Math.random() * (canvas.width - 90) + 20;
         this.y = -70;
         this.size = 50;
-        this.speed = (Math.random() * 1.5 + 1) + (difficultyFactor * 3); 
+        
+        // SNELHEID AANGEPAST OP MODUS
+        // In Rekenmodus is currentMode.speedMultiplier 0.3, dus ze vallen heel traag.
+        let baseSpeed = (Math.random() * 1.5 + 1);
+        
+        if (currentMode.name === 'Rekenen') {
+            // Constante trage snelheid, wordt nauwelijks sneller door difficulty
+            this.speed = 0.4 + (difficultyFactor * 0.2); 
+        } else {
+            // Normale actie snelheid
+            this.speed = baseSpeed + (difficultyFactor * 3);
+        }
         
         const keys = Object.keys(currentTypes);
         this.typeKey = keys[Math.floor(Math.random() * keys.length)];
         this.data = currentTypes[this.typeKey];
-        this.mathLabel = ""; // Voor de rekensom
+        this.mathLabel = "";
         
         // --- LOGICA ---
         if (this.data.logic === 'angle') {
-            // ... bestaande hoeken logica ...
             if (this.data.min === this.data.max) this.angle = this.data.min;
             else this.angle = Math.floor(Math.random() * (this.data.max - this.data.min + 1) + this.data.min);
             
         } else if (this.data.logic.startsWith('triangle_')) {
-            // ... bestaande driehoeken logica ...
             this.p1 = {x: 0, y: 0}; this.p2 = {x: 0, y: this.size}; this.p3 = {x: this.size, y: this.size};
             if (this.data.logic === 'triangle_eq') { this.p1.x = this.size/2; this.p1.y = 0; }
             else if (this.data.logic === 'triangle_iso') { 
@@ -334,38 +321,41 @@ class Enemy {
             }
             
         } else if (this.data.logic.startsWith('math_')) {
-            // --- NIEUWE REKENSOM LOGICA (BLOOM 3) ---
+            // --- AANGEPASTE REKEN MODUS: MOOIE GETALLEN ---
             let a, b, c;
             
+            // Helper functie: Rond af op 5 (bijv 32 -> 35, 41 -> 40)
+            const round5 = (num) => Math.round(num / 5) * 5;
+            
             if (this.data.logic === 'math_eq') {
-                // Gelijkzijdig: Altijd 60, 60, 60
                 a = 60; b = 60; c = 60;
             } else if (this.data.logic === 'math_iso') {
-                // Gelijkbenig: 2 hoeken gelijk. Geen 60/60/60. Geen 90 graden.
-                let base = Math.floor(Math.random() * 50) + 30; // 30 tot 80
-                if (base === 60) base = 55;
-                if (base === 45) base = 50; // Voorkom 45,45,90 (want dat is recht)
+                // Basis hoeken 30, 35, 40... tot 80
+                let base = (Math.floor(Math.random() * 10) + 6) * 5; 
+                if (base === 60) base = 50; // Voorkom 60
+                if (base === 45) base = 50; // Voorkom 45-45-90
                 a = base; b = base; c = 180 - (a+b);
             } else if (this.data.logic === 'math_right') {
-                // Rechthoekig: Eén hoek is 90
                 a = 90;
-                b = Math.floor(Math.random() * 60) + 15; // Willekeurige scherpe hoek
+                // Scherpe hoek 20, 25... 60
+                b = (Math.floor(Math.random() * 8) + 4) * 5; 
                 c = 180 - a - b;
             } else {
-                // Willekeurig: Alles anders, geen 90, som 180
+                // Willekeurig
                 do {
-                    a = Math.floor(Math.random() * 80) + 20;
-                    b = Math.floor(Math.random() * (160 - a)) + 10;
+                    a = (Math.floor(Math.random() * 12) + 4) * 5; // 20-80
+                    b = (Math.floor(Math.random() * 12) + 4) * 5;
                     c = 180 - a - b;
-                } while (a===b || b===c || a===c || a===90 || b===90 || c===90);
+                } while (a===b || b===c || a===c || a===90 || b===90 || c===90 || c <= 0);
             }
             
-            // Hussel de getallen zodat ? niet altijd achteraan staat
             let nums = [a, b, c];
-            nums.sort(() => Math.random() - 0.5);
+            // Verberg er eentje (random)
+            let hideIdx = Math.floor(Math.random() * 3);
+            let display = [...nums];
+            display[hideIdx] = "?";
             
-            // Maak string met 2 getallen en 1 vraagteken
-            this.mathLabel = `${nums[0]}°, ${nums[1]}°, ?`;
+            this.mathLabel = `${display[0]}°, ${display[1]}°, ${display[2]}`;
         }
     }
     
@@ -375,23 +365,19 @@ class Enemy {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
         
-        // MATH MODE: Teken een "UFO" bubbel met tekst
         if (this.data.logic.startsWith('math_')) {
-            // UFO Vorm (Ellips)
-            ctx.fillStyle = '#444'; // Neutraal grijs! (Geen spieken met kleuren)
+            ctx.fillStyle = '#444';
             ctx.beginPath();
-            ctx.ellipse(this.x + this.size/2, this.y + this.size/2, this.size, this.size/2, 0, 0, Math.PI * 2);
+            ctx.ellipse(this.x + this.size/2, this.y + this.size/2, this.size*1.2, this.size/1.8, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             
-            // Tekst tekenen
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 16px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(this.mathLabel, this.x + this.size/2, this.y + this.size/2 + 5);
             
         } else if (this.data.logic === 'angle') {
-            // HOEKEN MODE
             ctx.beginPath();
             ctx.moveTo(this.x + this.size, this.y + this.size);
             ctx.lineTo(this.x, this.y + this.size);
@@ -401,7 +387,6 @@ class Enemy {
             ctx.beginPath(); ctx.arc(this.x, this.y + this.size, 15, 0, -rad, true); ctx.stroke();
             
         } else {
-            // DRIEHOEKEN MODE
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.beginPath();
@@ -421,7 +406,6 @@ class Enemy {
     }
 }
 
-/* --- CONTROLS --- */
 const keys = {};
 window.addEventListener('keydown', e => {
     if(isGameOver) return;
@@ -442,7 +426,6 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-/* --- LOOP --- */
 function animate() {
     if (isGameOver) return;
     
@@ -453,20 +436,24 @@ function animate() {
     ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height); 
     
+    // Sterren effect
     let starSpeedMult = 1 + (difficultyFactor * 4);
+    if (currentMode.name === 'Rekenen') starSpeedMult = 0.5; // Rustige sterren in reken modus
+    
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     stars.forEach(s => {
         s.y += s.speed * starSpeedMult; 
         if(s.y > canvas.height) s.y = 0;
-        let length = s.size + (difficultyFactor * 20 * s.size);
+        let length = s.size;
+        if (currentMode.name !== 'Rekenen') length += (difficultyFactor * 20 * s.size);
         ctx.fillRect(s.x, s.y, s.size, length);
     });
     
     ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, canvas.height-2); ctx.lineTo(canvas.width, canvas.height-2); ctx.stroke();
     
-    if (keys['ArrowLeft'] && player.x > 0) player.x -= (6 + difficultyFactor);
-    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += (6 + difficultyFactor);
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= 7;
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 7;
     ctx.fillStyle = player.color;
     ctx.beginPath();
     ctx.moveTo(player.x + player.width/2, player.y);
@@ -486,7 +473,11 @@ function animate() {
         if(particles[i].size <= 0.2) { particles.splice(i,1); i--; }
     }
     
+    // SPAWN RATE
+    // In Rekenmodus spawn je MINDER vaak (om de 180 frames = 3 sec ongeveer)
     let spawnRate = Math.max(30, 90 - (difficultyFactor * 50));
+    if (currentMode.name === 'Rekenen') spawnRate = 180; // Rustige spawn
+    
     if (gameFrame % Math.floor(spawnRate) === 0) enemies.push(new Enemy());
     
     for (let i=0; i<enemies.length; i++) {
@@ -494,12 +485,10 @@ function animate() {
         
         for(let j=0; j<bullets.length; j++) {
             let b = bullets[j];
-            // Hitbox iets breder gemaakt voor de tekst-UFO's
             if(b.x > e.x-20 && b.x < e.x+e.size+20 && b.y > e.y && b.y < e.y+e.size) {
                 if(b.type === e.typeKey) {
                     score += 10;
                     playSound('hit');
-                    // Explosie in de kleur van het TYPE (dus onthult het goede antwoord)
                     for(let k=0; k<10; k++) particles.push(new Particle(e.x+20, e.y+20, e.data.color));
                     enemies.splice(i,1); bullets.splice(j,1);
                     i--; j--;
@@ -523,7 +512,6 @@ function animate() {
             if(lives <= 0) {
                 isGameOver = true;
                 document.getElementById('final-score').innerText = score;
-                document.getElementById('final-diff').innerText = Math.round(difficultyFactor * 100);
                 document.getElementById('game-over').style.display = 'block';
             }
         }
