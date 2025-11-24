@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Geometry Defender</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a2e; /* Donkerblauw heelal */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Geen scrollbalken */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 { margin: 10px 0; }
+        #gameCanvas {
+            background: #000;
+            border: 4px solid #4ecca3;
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.5);
+        }
+        #ui {
+            margin-top: 10px;
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+        }
+        .ammo-type {
+            padding: 5px 15px;
+            border-radius: 5px;
+            border: 2px solid #555;
+            opacity: 0.5;
+        }
+        .active {
+            opacity: 1;
+            font-weight: bold;
+            border-color: white;
+            transform: scale(1.1);
+        }
+        /* Kleurcodes voor de munitie */
+        .scherp { background-color: #2ecc71; } /* Groen */
+        .recht { background-color: #3498db; }  /* Blauw */
+        .stomp { background-color: #e67e22; }  /* Oranje */
+        .gestrekt { background-color: #9b59b6; } /* Paars */
+    </style>
+</head>
+<body>
+
+    <h2>Geometry Defender</h2>
+    <div id="ui">
+        <div>Score: <span id="score">0</span></div>
+        <div id="ui-scherp" class="ammo-type scherp active">1. Scherp</div>
+        <div id="ui-recht" class="ammo-type recht">2. Recht</div>
+        <div id="ui-stomp" class="ammo-type stomp">3. Stomp</div>
+        <div id="ui-gestrekt" class="ammo-type gestrekt">4. Gestrekt</div>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <p>Besturing: <b>Pijltjes</b> = Bewegen, <b>Spatie</b> = Schieten, <b>1-4</b> = Wissel Kogel</p>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+
+// Spelvariabelen
+let score = 0;
+let player = { x: 400, y: 550, width: 40, height: 40, color: '#2ecc71', type: 'scherp' };
+let bullets = [];
+let enemies = [];
+let gameFrame = 0;
+
+// De 4 types
+const TYPES = {
+    'scherp': { color: '#2ecc71', min: 15, max: 85, label: 'Scherp' },
+    'recht': { color: '#3498db', min: 90, max: 90, label: 'Recht' },
+    'stomp': { color: '#e67e22', min: 95, max: 175, label: 'Stomp' },
+    'gestrekt': { color: '#9b59b6', min: 180, max: 180, label: 'Gestrekt' }
+};
+
+// Input handling
+const keys = {};
+window.addEventListener('keydown', function(e){
+    keys[e.code] = true;
+    
+    // Wapen wisselen met 1, 2, 3, 4
+    if(e.key === '1') switchWeapon('scherp');
+    if(e.key === '2') switchWeapon('recht');
+    if(e.key === '3') switchWeapon('stomp');
+    if(e.key === '4') switchWeapon('gestrekt');
+    
+    // Schieten met Spatie
+    if(e.code === 'Space') {
+        bullets.push({
+            x: player.x + player.width/2,
+            y: player.y,
+            type: player.type,
+            color: TYPES[player.type].color,
+            speed: 7
+        });
+    }
+});
+
+window.addEventListener('keyup', function(e){
+    keys[e.code] = false;
+});
+
+function switchWeapon(type) {
+    player.type = type;
+    player.color = TYPES[type].color;
+    
+    // Update UI
+    document.querySelectorAll('.ammo-type').forEach(el => el.classList.remove('active'));
+    document.getElementById('ui-' + type).classList.add('active');
+}
+
+// Vijand Class (De Hoeken)
+class Enemy {
+    constructor(){
+        this.x = Math.random() * (canvas.width - 50);
+        this.y = -50;
+        this.speed = Math.random() * 1.5 + 0.5;
+        this.size = 40;
+        
+        // Kies willekeurig een type
+        const typeKeys = Object.keys(TYPES);
+        this.type = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+        
+        // Bepaal de graden op basis van het type
+        const range = TYPES[this.type];
+        if (range.min === range.max) {
+            this.angle = range.min; // Exact 90 of 180
+        } else {
+            this.angle = Math.floor(Math.random() * (range.max - range.min + 1) + range.min);
+        }
+    }
+    
+    update(){
+        this.y += this.speed;
+    }
+    
+    draw(){
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        
+        // Teken de hoek (twee lijnen)
+        // Lijn 1 (basis)
+        ctx.moveTo(this.x + this.size, this.y + this.size);
+        ctx.lineTo(this.x, this.y + this.size);
+        
+        // Lijn 2 (onder een hoek)
+        // We gebruiken Math.cos/sin om de tweede lijn te berekenen
+        const radians = (this.angle * Math.PI) / 180;
+        const endX = this.x + Math.cos(radians) * this.size;
+        const endY = (this.y + this.size) - Math.sin(radians) * this.size;
+        
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        
+        // Teken gradenboogje (klein)
+        ctx.beginPath();
+        ctx.arc(this.x, this.y + this.size, 10, 0, -radians, true); // true = counterclockwise
+        ctx.stroke();
+        
+        // Debug: toon graden (optioneel, voor nu handig)
+        // ctx.fillStyle = 'white';
+        // ctx.font = '10px Arial';
+        // ctx.fillText(this.angle + '°', this.x, this.y);
+    }
+}
+
+function animate(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Speler bewegen
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= 5;
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 5;
+    
+    // Speler tekenen
+    ctx.fillStyle = player.color;
+    
+    // Simpel ruimteschip (driehoek)
+    ctx.beginPath();
+    ctx.moveTo(player.x + player.width/2, player.y);
+    ctx.lineTo(player.x + player.width, player.y + player.height);
+    ctx.lineTo(player.x, player.y + player.height);
+    ctx.fill();
+    
+    // Kogels
+    for (let i = 0; i < bullets.length; i++){
+        let b = bullets[i];
+        b.y -= b.speed;
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x - 2, b.y, 4, 10);
+        
+        // Verwijder als uit scherm
+        if (b.y < 0) {
+            bullets.splice(i, 1);
+            i--;
+        }
+    }
+    
+    // Vijanden spawnen
+    if (gameFrame % 120 === 0) { // Elke 2 seconden (ongeveer)
+        enemies.push(new Enemy());
+    }
+    
+    // Vijanden updaten en tekenen
+    for (let i = 0; i < enemies.length; i++){
+        let e = enemies[i];
+        e.update();
+        e.draw();
+        
+        // Collision Detection (Kogel raakt Vijand)
+        for (let j = 0; j < bullets.length; j++){
+            let b = bullets[j];
+            // Simpele afstand check
+            if (b.x > e.x - 20 && b.x < e.x + 60 && b.y > e.y && b.y < e.y + 60){
+                
+                if (b.type === e.type) {
+                    // GOED!
+                    score += 10;
+                    enemies.splice(i, 1);
+                    bullets.splice(j, 1);
+                    i--; j--;
+                    scoreEl.innerText = score;
+                } else {
+                    // FOUT TYPE!
+                    score -= 5;
+                    bullets.splice(j, 1);
+                    j--;
+                    // Visuele feedback (rood scherm flits) kan hier
+                }
+                break; 
+            }
+        }
+        
+        // Game Over of vijand beneden
+        if (e.y > canvas.height) {
+            enemies.splice(i, 1);
+            i--;
+            score -= 2; // Strafpunten voor gemiste vijand
+            scoreEl.innerText = score;
+        }
+    }
+    
+    gameFrame++;
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
