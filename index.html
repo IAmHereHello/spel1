@@ -2,11 +2,11 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Geometry Defender</title>
+    <title>Geometry Defender: Warp Edition</title>
     <style>
         body {
             margin: 0;
-            background: #0b0b14;
+            background: #000;
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
@@ -15,9 +15,10 @@
             align-items: center;
             user-select: none;
         }
-        h2 { margin: 10px 0; text-shadow: 0 0 10px #4ecca3; }
+        h2 { margin: 10px 0; text-shadow: 0 0 10px #4ecca3; z-index: 10; }
+        
         #gameCanvas {
-            background: #000;
+            background: transparent; /* Achtergrond wordt nu door JS getekend */
             border: 4px solid #4ecca3;
             box-shadow: 0 0 30px rgba(78, 204, 163, 0.3);
             border-radius: 4px;
@@ -32,11 +33,13 @@
             font-size: 18px;
             align-items: center;
             display: none;
+            z-index: 10;
         }
         .ammo-type {
             padding: 5px 15px;
             border-radius: 5px;
             border: 2px solid #555;
+            background: rgba(0,0,0,0.5);
             opacity: 0.5;
             transition: all 0.1s;
             position: relative;
@@ -110,6 +113,7 @@
     <div id="game-over" class="overlay-screen">
         <h1 style="color: #ff4757;">GAME OVER</h1>
         <p style="font-size: 24px;">Score: <span id="final-score">0</span></p>
+        <p>Moeilijkheidsgraad bereikt: <span id="final-diff">0</span>%</p>
         <button class="mode-btn restart-btn" onclick="location.reload()">Hoofdmenu</button>
     </div>
 
@@ -175,11 +179,10 @@ const GAME_MODES = {
     'driehoeken': {
         name: 'Driehoeken',
         types: {
-            // AANGEPAST: Duidelijke namen en kleuren
-            'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' }, // Geel
-            'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' }, // Oranje
-            'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' }, // Blauw
-            'type4': { label: 'Willekeurig', color: '#95a5a6', logic: 'triangle_random' } // Grijs (Neutraal)
+            'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' },
+            'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' },
+            'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' },
+            'type4': { label: 'Willekeurig', color: '#ecf0f1', logic: 'triangle_random' }
         }
     }
 };
@@ -194,6 +197,7 @@ let lives = 4;
 let isGameOver = false;
 let isRunning = false;
 let gameFrame = 0;
+let difficultyFactor = 0; // 0.0 tot 1.0 (en hoger)
 
 let player = { x: 400, y: 550, width: 40, height: 40, color: '#fff', type: 'type1' };
 let bullets = [];
@@ -201,10 +205,13 @@ let enemies = [];
 let particles = [];
 let stars = [];
 
-for(let i=0; i<50; i++) {
+// Maak meer sterren voor warp effect
+for(let i=0; i<80; i++) {
     stars.push({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        size: Math.random() * 2, speed: Math.random() * 2 + 0.5
+        x: Math.random() * canvas.width, 
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 0.5, 
+        speed: Math.random() * 3 + 1
     });
 }
 
@@ -219,7 +226,6 @@ function startGame(modeKey) {
     document.getElementById('ui').style.display = 'flex';
     
     setupUIButtons();
-    
     player.type = 'type1';
     switchWeapon('type1');
     
@@ -237,7 +243,6 @@ function setupUIButtons() {
         el.innerText = i + ". " + data.label;
         el.style.backgroundColor = data.color;
         el.style.color = '#000';
-        // Reset border
         el.style.borderColor = "#555";
         i++;
     }
@@ -246,7 +251,6 @@ function setupUIButtons() {
 function switchWeapon(typeKey) {
     player.type = typeKey;
     player.color = currentTypes[typeKey].color;
-    
     for(let i=1; i<=4; i++) {
         document.getElementById('ui-'+i).classList.remove('active');
         document.getElementById('ui-'+i).style.borderColor = "#555";
@@ -275,45 +279,62 @@ class Particle {
 
 class Enemy {
     constructor() {
-        this.x = Math.random() * (canvas.width - 60) + 10;
-        this.y = -60;
-        this.speed = Math.random() * 1.5 + 1;
+        this.x = Math.random() * (canvas.width - 70) + 10;
+        this.y = -70;
         this.size = 50;
+        
+        // Base snelheid + moeilijkheidsgraad
+        // Hoe hoger de score, hoe sneller ze vallen
+        this.speed = (Math.random() * 1.5 + 1) + (difficultyFactor * 3); 
         
         const keys = Object.keys(currentTypes);
         this.typeKey = keys[Math.floor(Math.random() * keys.length)];
         this.data = currentTypes[this.typeKey];
         
-        // Hoeken modus
+        /* --- PROCEDURAL GENERATION --- */
+        // We genereren nu random coördinaten voor unieke driehoeken
         if (this.data.logic === 'angle') {
             if (this.data.min === this.data.max) this.angle = this.data.min;
             else this.angle = Math.floor(Math.random() * (this.data.max - this.data.min + 1) + this.data.min);
         } else {
-            // Driehoeken modus
+            // Basis punten (links-onder en rechts-onder) staan vast t.o.v. x/y
+            // We variëren vooral punt 1 (de top)
             this.p1 = {x: 0, y: 0};
             this.p2 = {x: 0, y: this.size};
             this.p3 = {x: this.size, y: this.size};
             
-            if (this.data.logic === 'triangle_eq') { 
-                // Gelijkzijdig: Mooi symmetrisch
+            if (this.data.logic === 'triangle_eq') {
+                // Gelijkzijdig: Altijd symmetrisch, maar we kunnen hem een beetje kantelen of schalen
                 this.p1.x = this.size / 2;
                 this.p1.y = 0; 
-            } 
-            else if (this.data.logic === 'triangle_iso') { 
-                // Gelijkbenig: Smal en hoog (anders dan gelijkzijdig)
-                this.p1.x = this.size / 2; 
-                this.p1.y = -15; // Extra puntig gemaakt
-            } 
-            else if (this.data.logic === 'triangle_right') { 
-                // Rechthoekig
-                this.p1.x = 0; 
-                this.p1.y = 0;
-            } 
-            else if (this.data.logic === 'triangle_random') { 
-                // Willekeurig: Scheef
-                this.p1.x = this.size * 0.3; 
-                this.p1.y = 10;
-                this.p3.y = this.size - 15; // Rechtsonder hoger dan linksonder
+            }
+            else if (this.data.logic === 'triangle_iso') {
+                // Gelijkbenig: P1 zit in het midden (x = size/2)
+                // Maar de hoogte (y) is willekeurig! (smal/lang of breed/laag)
+                this.p1.x = this.size / 2;
+                // Random hoogte tussen 0.5x en 2x de breedte, maar niet gelijkzijdig
+                let randomHeight = Math.random() * this.size * 1.5 + 20;
+                // Zorg dat hij niet per ongeluk gelijkzijdig lijkt (hoogte ~43)
+                if (Math.abs(randomHeight - 43) < 10) randomHeight += 20; 
+                this.p1.y = this.size - randomHeight;
+            }
+            else if (this.data.logic === 'triangle_right') {
+                // Rechthoekig: P1 zit recht boven P2 OF recht boven P3
+                if (Math.random() < 0.5) {
+                    this.p1.x = 0; // Links recht
+                } else {
+                    this.p1.x = this.size; // Rechts recht
+                }
+                // Random hoogte
+                this.p1.y = this.size - (Math.random() * this.size + 20);
+            }
+            else if (this.data.logic === 'triangle_random') {
+                // Willekeurig: P1 mag NIET in het midden en NIET boven de hoeken
+                // X tussen 20% en 80%, maar niet 50%
+                let rndX = Math.random() * 0.6 + 0.2; // 0.2 tot 0.8
+                if (rndX > 0.45 && rndX < 0.55) rndX = 0.3; // Correctie midden
+                this.p1.x = this.size * rndX;
+                this.p1.y = this.size - (Math.random() * this.size * 1.2 + 20);
             }
         }
     }
@@ -326,7 +347,6 @@ class Enemy {
         ctx.beginPath();
         
         if (this.data.logic === 'angle') {
-            // Teken hoek
             ctx.moveTo(this.x + this.size, this.y + this.size);
             ctx.lineTo(this.x, this.y + this.size);
             const radians = (this.angle * Math.PI) / 180;
@@ -337,10 +357,8 @@ class Enemy {
             ctx.beginPath(); ctx.arc(this.x, this.y + this.size, 15, 0, -radians, true); ctx.stroke();
             
         } else {
-            // Teken driehoek
             ctx.save();
             ctx.translate(this.x, this.y);
-            
             ctx.beginPath();
             ctx.moveTo(this.p1.x, this.p1.y);
             ctx.lineTo(this.p2.x, this.p2.y);
@@ -352,10 +370,15 @@ class Enemy {
             if (this.data.logic === 'triangle_right') {
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.rect(0, this.size - 10, 10, 10);
+                let cornerSize = 10;
+                // Check of de rechte hoek links of rechts zit
+                if (this.p1.x === 0) { // Links
+                    ctx.rect(0, this.size - cornerSize, cornerSize, cornerSize);
+                } else { // Rechts
+                    ctx.rect(this.size - cornerSize, this.size - cornerSize, cornerSize, cornerSize);
+                }
                 ctx.stroke();
             }
-            
             ctx.restore();
         }
     }
@@ -366,12 +389,10 @@ const keys = {};
 window.addEventListener('keydown', e => {
     if(isGameOver) return;
     keys[e.code] = true;
-    
     if(e.key === '1') switchWeapon('type1');
     if(e.key === '2') switchWeapon('type2');
     if(e.key === '3') switchWeapon('type3');
     if(e.key === '4') switchWeapon('type4');
-    
     if(e.code === 'Space') {
         bullets.push({
             x: player.x + player.width/2, y: player.y,
@@ -387,19 +408,42 @@ window.addEventListener('keyup', e => keys[e.code] = false);
 /* --- LOOP --- */
 function animate() {
     if (isGameOver) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    // MOEILIJKHEID EN ACHTERGROND UPDATE
+    // Factor gaat van 0.0 naar 1.0 (en hoger) naarmate score stijgt
+    // Bij 500 punten is factor 1.0
+    difficultyFactor = score / 500; 
+    
+    // Achtergrond kleur verloop: Donkerblauw naar Donkerrood
+    // Blauw start: rgb(11, 11, 20)
+    // Rood eind: rgb(60, 0, 0)
+    let r = Math.min(60, 11 + (difficultyFactor * 50));
+    let g = Math.max(0, 11 - (difficultyFactor * 11));
+    let b = Math.max(0, 20 - (difficultyFactor * 20));
+    
+    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height); // Wis scherm met nieuwe kleur
+    
+    // STERREN (WARP EFFECT)
+    let starSpeedMult = 1 + (difficultyFactor * 4); // Sterren gaan tot 5x sneller
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    
     stars.forEach(s => {
-        s.y += s.speed; if(s.y > canvas.height) s.y = 0;
-        ctx.fillRect(s.x, s.y, s.size, s.size);
+        s.y += s.speed * starSpeedMult; 
+        if(s.y > canvas.height) s.y = 0;
+        
+        // Teken sterren als strepen als het sneller gaat
+        let length = s.size + (difficultyFactor * 20 * s.size);
+        ctx.fillRect(s.x, s.y, s.size, length);
     });
     
+    // BODEM LIJN
     ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, canvas.height-2); ctx.lineTo(canvas.width, canvas.height-2); ctx.stroke();
     
-    if (keys['ArrowLeft'] && player.x > 0) player.x -= 6;
-    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 6;
+    // SPELER
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= (6 + difficultyFactor); // Speler ook iets sneller
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += (6 + difficultyFactor);
     ctx.fillStyle = player.color;
     ctx.beginPath();
     ctx.moveTo(player.x + player.width/2, player.y);
@@ -408,22 +452,30 @@ function animate() {
     ctx.lineTo(player.x, player.y + player.height);
     ctx.fill();
     
+    // KOGELS
     for (let i=0; i<bullets.length; i++) {
         let b = bullets[i]; b.y -= b.speed;
         ctx.fillStyle = b.color; ctx.fillRect(b.x-3, b.y, 6, 12);
         if(b.y < 0) { bullets.splice(i,1); i--; }
     }
     
+    // PARTICLES
     for(let i=0; i<particles.length; i++) {
         particles[i].update(); particles[i].draw();
         if(particles[i].size <= 0.2) { particles.splice(i,1); i--; }
     }
     
-    if (gameFrame % 90 === 0) enemies.push(new Enemy());
+    // VIJANDEN SPAWNEN
+    // Normaal elke 90 frames. Hoe moeilijker, hoe lager dit getal.
+    // Minimaal elke 30 frames (anders is het onmogelijk)
+    let spawnRate = Math.max(30, 90 - (difficultyFactor * 50));
+    
+    if (gameFrame % Math.floor(spawnRate) === 0) enemies.push(new Enemy());
     
     for (let i=0; i<enemies.length; i++) {
         let e = enemies[i]; e.update(); e.draw();
         
+        // Botsing kogel
         for(let j=0; j<bullets.length; j++) {
             let b = bullets[j];
             if(b.x > e.x-10 && b.x < e.x+e.size+10 && b.y > e.y && b.y < e.y+e.size) {
@@ -443,6 +495,7 @@ function animate() {
             }
         }
         
+        // Bodem
         if(e.y > canvas.height) {
             enemies.splice(i,1); i--;
             lives--;
@@ -453,6 +506,7 @@ function animate() {
             if(lives <= 0) {
                 isGameOver = true;
                 document.getElementById('final-score').innerText = score;
+                document.getElementById('final-diff').innerText = Math.round(difficultyFactor * 100);
                 document.getElementById('game-over').style.display = 'block';
             }
         }
