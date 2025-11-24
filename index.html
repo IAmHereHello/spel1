@@ -6,19 +6,21 @@
     <style>
         body {
             margin: 0;
-            background: #1a1a2e;
+            background: #0b0b14; /* Iets donkerder voor contrast */
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
+            user-select: none; /* Voorkomt tekst selecteren tijdens spelen */
         }
-        h2 { margin: 10px 0; }
+        h2 { margin: 10px 0; text-shadow: 0 0 10px #4ecca3; }
         #gameCanvas {
             background: #000;
             border: 4px solid #4ecca3;
-            box-shadow: 0 0 20px rgba(78, 204, 163, 0.5);
+            box-shadow: 0 0 30px rgba(78, 204, 163, 0.3);
+            border-radius: 4px;
         }
         #ui {
             margin-top: 10px;
@@ -33,40 +35,58 @@
             border: 2px solid #555;
             opacity: 0.5;
             transition: all 0.1s;
+            position: relative;
         }
         .active {
             opacity: 1;
             font-weight: bold;
             border-color: white;
             transform: scale(1.1);
+            box-shadow: 0 0 15px currentColor;
+            z-index: 10;
         }
         /* Kleurcodes */
-        .scherp { background-color: #2ecc71; }
-        .recht { background-color: #3498db; }
-        .stomp { background-color: #e67e22; }
-        .gestrekt { background-color: #9b59b6; }
+        .scherp { background-color: #2ecc71; color: #000; }
+        .recht { background-color: #3498db; color: #000; }
+        .stomp { background-color: #e67e22; color: #000; }
+        .gestrekt { background-color: #9b59b6; color: #000; }
         
-        /* NIEUW: Stijl voor de levens en game over scherm */
-        #lives { color: #ff4757; font-weight: bold; }
+        #lives { color: #ff4757; font-weight: bold; text-shadow: 0 0 5px red; }
+        
         #game-over {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 40px;
-            border: 2px solid white;
+            background: rgba(10, 10, 20, 0.95);
+            padding: 50px;
+            border: 4px solid #ff4757;
+            border-radius: 15px;
             text-align: center;
-            display: none; /* Standaard verborgen */
+            display: none;
+            box-shadow: 0 0 50px rgba(255, 71, 87, 0.5);
+            z-index: 100;
         }
         button {
             background: #4ecca3;
             border: none;
-            padding: 10px 20px;
-            font-size: 18px;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
             cursor: pointer;
             margin-top: 20px;
+            border-radius: 5px;
+            transition: transform 0.2s;
         }
+        button:hover { transform: scale(1.05); background: #45b592; }
+        #start-prompt {
+            position: absolute;
+            top: 40%;
+            font-size: 24px;
+            color: #aaa;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -83,30 +103,94 @@
     </div>
     
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <p>Besturing: <b>Pijltjes</b> = Bewegen, <b>Spatie</b> = Schieten, <b>1-4</b> = Wissel Kogel</p>
+    
+    <div id="start-prompt">Klik hier of druk op Spatie om te starten</div>
 
     <div id="game-over">
-        <h1>GAME OVER</h1>
-        <p>Je eindscore: <span id="final-score">0</span></p>
+        <h1 style="color: #ff4757; font-size: 40px; margin: 0;">GAME OVER</h1>
+        <p style="font-size: 24px;">Je eindscore: <span id="final-score">0</span></p>
         <button onclick="location.reload()">Opnieuw Spelen</button>
     </div>
 
 <script>
+/**
+ * AUDIO SYSTEEM (Web Audio API)
+ * Genereert geluiden in de browser zonder mp3 bestanden
+ */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'shoot') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } 
+    else if (type === 'hit') {
+        osc.type = 'triangle'; // Zachtere toon
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+    }
+    else if (type === 'damage') {
+        osc.type = 'sawtooth'; // Ruw geluid
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    }
+}
+
+/**
+ * GAME LOGIC
+ */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
 const gameOverEl = document.getElementById('game-over');
 const finalScoreEl = document.getElementById('final-score');
+const startPrompt = document.getElementById('start-prompt');
 
-// Spelvariabelen
 let score = 0;
-let lives = 4; // NIEUW: Start met 4 levens
-let isGameOver = false; // NIEUW: Status van het spel
+let lives = 4;
+let isGameOver = false;
+let gameStarted = false;
+let gameFrame = 0;
+
 let player = { x: 400, y: 550, width: 40, height: 40, color: '#2ecc71', type: 'scherp' };
 let bullets = [];
 let enemies = [];
-let gameFrame = 0;
+let particles = []; // NIEUW: Array voor explosies
+let stars = [];     // NIEUW: Achtergrond sterren
+
+// Maak sterren voor achtergrond
+for(let i=0; i<50; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speed: Math.random() * 2 + 0.5
+    });
+}
 
 const TYPES = {
     'scherp': { color: '#2ecc71', min: 15, max: 85 },
@@ -115,28 +199,63 @@ const TYPES = {
     'gestrekt': { color: '#9b59b6', min: 180, max: 180 }
 };
 
+// Controls
 const keys = {};
 window.addEventListener('keydown', function(e){
-    if(isGameOver) return; // Geen input als game over is
+    if (!gameStarted) {
+        gameStarted = true;
+        startPrompt.style.display = 'none';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    if(isGameOver) return;
+    
     keys[e.code] = true;
     if(e.key === '1') switchWeapon('scherp');
     if(e.key === '2') switchWeapon('recht');
     if(e.key === '3') switchWeapon('stomp');
     if(e.key === '4') switchWeapon('gestrekt');
+    
     if(e.code === 'Space') {
         bullets.push({
             x: player.x + player.width/2,
             y: player.y,
             type: player.type,
             color: TYPES[player.type].color,
-            speed: 7
+            speed: 10 // Iets sneller
         });
+        playSound('shoot'); // NIEUW: Geluid
     }
 });
+window.addEventListener('keyup', e => keys[e.code] = false);
 
-window.addEventListener('keyup', function(e){
-    keys[e.code] = false;
-});
+// NIEUW: Particle Class voor explosies
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = Math.random() * 3 + 2;
+        this.speedX = Math.random() * 4 - 2; // Willekeurig links/rechts
+        this.speedY = Math.random() * 4 - 2; // Willekeurig op/neer
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.size -= 0.1; // Krimpen
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function createExplosion(x, y, color) {
+    for(let i=0; i<15; i++) { // Maak 15 deeltjes
+        particles.push(new Particle(x, y, color));
+    }
+}
 
 function switchWeapon(type) {
     player.type = type;
@@ -145,126 +264,129 @@ function switchWeapon(type) {
     document.getElementById('ui-' + type).classList.add('active');
 }
 
-// NIEUW: Functie om levens te updaten
 function updateLives(amount) {
     lives += amount;
-    // Teken hartjes string
+    if (amount < 0) playSound('damage'); // Geluid bij pijn
+    
     let heartString = "Levens: ";
     for(let i=0; i<lives; i++) heartString += "❤️";
     livesEl.innerText = heartString;
 
-    if (lives <= 0) {
-        endGame();
-    }
+    if (lives <= 0) endGame();
 }
 
-// NIEUW: Game Over functie
 function endGame() {
     isGameOver = true;
     finalScoreEl.innerText = score;
-    gameOverEl.style.display = 'block'; // Toon het scherm
+    gameOverEl.style.display = 'block';
 }
 
 class Enemy {
     constructor(){
         this.x = Math.random() * (canvas.width - 50);
         this.y = -50;
-        this.speed = Math.random() * 1.5 + 0.5; // Snelheid
+        this.speed = Math.random() * 1.5 + 1; // Iets sneller dan eerst
         this.size = 40;
-        
         const typeKeys = Object.keys(TYPES);
         this.type = typeKeys[Math.floor(Math.random() * typeKeys.length)];
-        
         const range = TYPES[this.type];
-        if (range.min === range.max) {
-            this.angle = range.min;
-        } else {
-            this.angle = Math.floor(Math.random() * (range.max - range.min + 1) + range.min);
-        }
+        this.angle = (range.min === range.max) ? range.min : Math.floor(Math.random() * (range.max - range.min + 1) + range.min);
     }
-    
-    update(){
-        this.y += this.speed;
-    }
-    
+    update(){ this.y += this.speed; }
     draw(){
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(this.x + this.size, this.y + this.size);
         ctx.lineTo(this.x, this.y + this.size);
-        
         const radians = (this.angle * Math.PI) / 180;
         const endX = this.x + Math.cos(radians) * this.size;
         const endY = (this.y + this.size) - Math.sin(radians) * this.size;
-        
         ctx.lineTo(endX, endY);
         ctx.stroke();
         
+        // Gradenboogje
         ctx.beginPath();
         ctx.arc(this.x, this.y + this.size, 10, 0, -radians, true);
         ctx.stroke();
+        
+        // Klein labeltje voor type (makkelijker voor beginners)
+        // ctx.font = "10px Arial";
+        // ctx.fillStyle = "#aaa";
+        // ctx.fillText(this.angle + "°", this.x + 10, this.y - 10);
     }
 }
 
 function animate(){
-    if (isGameOver) return; // Stop animatie als game over is
-
+    if (isGameOver) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // NIEUW: Rode lijn onderin tekenen om het gevaar aan te geven
+    // 1. Teken Sterren (Achtergrond)
+    ctx.fillStyle = 'white';
+    stars.forEach(star => {
+        star.y += star.speed;
+        if (star.y > canvas.height) star.y = 0; // Reset naar boven
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
+
+    // 2. Gevaarlijn
     ctx.strokeStyle = '#ff4757';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height - 2);
-    ctx.lineTo(canvas.width, canvas.height - 2);
-    ctx.stroke();
-    
-    // Speler
-    if (keys['ArrowLeft'] && player.x > 0) player.x -= 5;
-    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 5;
-    
+    ctx.beginPath(); ctx.moveTo(0, canvas.height - 2); ctx.lineTo(canvas.width, canvas.height - 2); ctx.stroke();
+
+    // 3. Speler
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= 6;
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 6;
     ctx.fillStyle = player.color;
+    
+    // Iets mooier ruimteschip
     ctx.beginPath();
     ctx.moveTo(player.x + player.width/2, player.y);
     ctx.lineTo(player.x + player.width, player.y + player.height);
+    ctx.lineTo(player.x + player.width/2, player.y + player.height - 10); // Inkeping onderkant
     ctx.lineTo(player.x, player.y + player.height);
     ctx.fill();
-    
-    // Kogels
+
+    // 4. Kogels
     for (let i = 0; i < bullets.length; i++){
         let b = bullets[i];
         b.y -= b.speed;
         ctx.fillStyle = b.color;
-        ctx.fillRect(b.x - 2, b.y, 4, 10);
-        
-        if (b.y < 0) {
-            bullets.splice(i, 1);
-            i--;
-        }
+        ctx.fillRect(b.x - 3, b.y, 6, 12);
+        if (b.y < 0) { bullets.splice(i, 1); i--; }
     }
-    
-    if (gameFrame % 120 === 0) {
-        enemies.push(new Enemy());
+
+    // 5. Particles (Explosies)
+    for (let i = 0; i < particles.length; i++){
+        let p = particles[i];
+        p.update();
+        p.draw();
+        if (p.size <= 0.2) { particles.splice(i, 1); i--; }
     }
-    
+
+    // 6. Vijanden
+    if (gameFrame % 100 === 0 && gameStarted) enemies.push(new Enemy()); // Iets sneller spawnen
+
     for (let i = 0; i < enemies.length; i++){
         let e = enemies[i];
         e.update();
         e.draw();
         
-        // Collisions
+        // Collision: Kogel raakt Vijand
         for (let j = 0; j < bullets.length; j++){
             let b = bullets[j];
             if (b.x > e.x - 20 && b.x < e.x + 60 && b.y > e.y && b.y < e.y + 60){
                 if (b.type === e.type) {
                     score += 10;
+                    playSound('hit'); // Geluid!
+                    createExplosion(e.x + 20, e.y + 20, TYPES[e.type].color); // Explosie!
                     enemies.splice(i, 1);
                     bullets.splice(j, 1);
                     i--; j--;
                     scoreEl.innerText = score;
                 } else {
                     score -= 5;
+                    createExplosion(b.x, b.y, '#fff'); // Kleine witte vonk (kogel breekt)
                     bullets.splice(j, 1);
                     j--;
                 }
@@ -272,12 +394,15 @@ function animate(){
             }
         }
         
-        // NIEUW: Check of vijand de bodem raakt
-        // We checken of de Y-positie van de vijand groter is dan canvas hoogte
+        // Vijand raakt grond
         if (e.y > canvas.height) {
             enemies.splice(i, 1);
             i--;
-            updateLives(-1); // Leven eraf!
+            updateLives(-1);
+            
+            // Schudden van scherm effect (Screen Shake)
+            canvas.style.transform = "translate(5px, 5px)";
+            setTimeout(() => canvas.style.transform = "none", 50);
         }
     }
     
