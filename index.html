@@ -21,7 +21,7 @@
             border: 4px solid #4ecca3;
             box-shadow: 0 0 30px rgba(78, 204, 163, 0.3);
             border-radius: 4px;
-            display: none; /* Verbergen tot start */
+            display: none;
         }
         
         /* UI Elementen */
@@ -31,7 +31,7 @@
             gap: 20px;
             font-size: 18px;
             align-items: center;
-            display: none; /* Verbergen tot start */
+            display: none;
         }
         .ammo-type {
             padding: 5px 15px;
@@ -52,7 +52,6 @@
             z-index: 10;
         }
         
-        /* Kleuren worden dynamisch ingesteld via JS, maar basisstijl hier */
         #lives { color: #ff4757; font-weight: bold; text-shadow: 0 0 5px red; }
 
         /* MENU STIJLEN */
@@ -163,7 +162,6 @@ function playSound(type) {
 }
 
 /* --- GAME DATA --- */
-// Hier definiëren we de regels voor beide modi
 const GAME_MODES = {
     'hoeken': {
         name: 'Hoeken',
@@ -177,10 +175,11 @@ const GAME_MODES = {
     'driehoeken': {
         name: 'Driehoeken',
         types: {
+            // AANGEPAST: Duidelijke namen en kleuren
             'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' }, // Geel
-            'type2': { label: 'Gelijkbenig', color: '#e74c3c', logic: 'triangle_iso' }, // Rood
+            'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' }, // Oranje
             'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' }, // Blauw
-            'type4': { label: 'Ongelijkzijdig', color: '#9b59b6', logic: 'triangle_scalene' } // Paars
+            'type4': { label: 'Willekeurig', color: '#95a5a6', logic: 'triangle_random' } // Grijs (Neutraal)
         }
     }
 };
@@ -202,7 +201,6 @@ let enemies = [];
 let particles = [];
 let stars = [];
 
-// Achtergrond initialisatie
 for(let i=0; i<50; i++) {
     stars.push({
         x: Math.random() * canvas.width, y: Math.random() * canvas.height,
@@ -213,23 +211,18 @@ for(let i=0; i<50; i++) {
 /* --- FUNCTIES --- */
 
 function startGame(modeKey) {
-    // Setup Mode
     currentMode = GAME_MODES[modeKey];
     currentTypes = currentMode.types;
     
-    // UI Setup
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('gameCanvas').style.display = 'block';
     document.getElementById('ui').style.display = 'flex';
     
-    // Knoppen teksten en kleuren instellen
     setupUIButtons();
     
-    // Player reset
     player.type = 'type1';
     switchWeapon('type1');
     
-    // Start loop
     if (!isRunning) {
         isRunning = true;
         animate();
@@ -243,7 +236,9 @@ function setupUIButtons() {
         let data = currentTypes[key];
         el.innerText = i + ". " + data.label;
         el.style.backgroundColor = data.color;
-        el.style.color = '#000'; // Zwarte tekst voor leesbaarheid
+        el.style.color = '#000';
+        // Reset border
+        el.style.borderColor = "#555";
         i++;
     }
 }
@@ -252,13 +247,10 @@ function switchWeapon(typeKey) {
     player.type = typeKey;
     player.color = currentTypes[typeKey].color;
     
-    // UI update
     for(let i=1; i<=4; i++) {
         document.getElementById('ui-'+i).classList.remove('active');
         document.getElementById('ui-'+i).style.borderColor = "#555";
     }
-    // We moeten weten welke index (1-4) bij deze key hoort. 
-    // Simpele hack: typeKey is "type1", "type2" etc.
     let index = typeKey.replace('type', '');
     let activeEl = document.getElementById('ui-' + index);
     activeEl.classList.add('active');
@@ -288,36 +280,40 @@ class Enemy {
         this.speed = Math.random() * 1.5 + 1;
         this.size = 50;
         
-        // Kies willekeurig type uit huidige mode
         const keys = Object.keys(currentTypes);
         this.typeKey = keys[Math.floor(Math.random() * keys.length)];
         this.data = currentTypes[this.typeKey];
         
-        // Specifieke data genereren voor tekenen
+        // Hoeken modus
         if (this.data.logic === 'angle') {
-            // Hoeken logica
             if (this.data.min === this.data.max) this.angle = this.data.min;
             else this.angle = Math.floor(Math.random() * (this.data.max - this.data.min + 1) + this.data.min);
         } else {
-            // Driehoeken logica: we berekenen hier de offsets van de 3 punten (Top, Links, Rechts)
-            // Basis is altijd onderaan
-            this.p1 = {x: 0, y: 0}; // Top
-            this.p2 = {x: 0, y: this.size}; // Links onder
-            this.p3 = {x: this.size, y: this.size}; // Rechts onder
+            // Driehoeken modus
+            this.p1 = {x: 0, y: 0};
+            this.p2 = {x: 0, y: this.size};
+            this.p3 = {x: this.size, y: this.size};
             
-            if (this.data.logic === 'triangle_eq') { // Gelijkzijdig
+            if (this.data.logic === 'triangle_eq') { 
+                // Gelijkzijdig: Mooi symmetrisch
                 this.p1.x = this.size / 2;
-                this.p1.y = 0; // Hoogte is eigenlijk size * sqrt(3)/2 maar voor spel is dit ok
-            } else if (this.data.logic === 'triangle_iso') { // Gelijkbenig (maar niet gelijkzijdig)
-                this.p1.x = this.size / 2;
-                this.p1.y = 10; // Iets platter of puntiger
-            } else if (this.data.logic === 'triangle_right') { // Rechthoekig
-                this.p1.x = 0; // Punt recht boven linksonder
+                this.p1.y = 0; 
+            } 
+            else if (this.data.logic === 'triangle_iso') { 
+                // Gelijkbenig: Smal en hoog (anders dan gelijkzijdig)
+                this.p1.x = this.size / 2; 
+                this.p1.y = -15; // Extra puntig gemaakt
+            } 
+            else if (this.data.logic === 'triangle_right') { 
+                // Rechthoekig
+                this.p1.x = 0; 
                 this.p1.y = 0;
-            } else if (this.data.logic === 'triangle_scalene') { // Ongelijkzijdig
-                this.p1.x = this.size * 0.2; // Beetje scheef
+            } 
+            else if (this.data.logic === 'triangle_random') { 
+                // Willekeurig: Scheef
+                this.p1.x = this.size * 0.3; 
                 this.p1.y = 10;
-                this.p3.y = this.size - 10; // Rechtsonder iets hoger
+                this.p3.y = this.size - 15; // Rechtsonder hoger dan linksonder
             }
         }
     }
@@ -330,22 +326,18 @@ class Enemy {
         ctx.beginPath();
         
         if (this.data.logic === 'angle') {
-            // HOEKEN TEKENEN
-            ctx.moveTo(this.x + this.size, this.y + this.size); // Start rechtsonder
-            ctx.lineTo(this.x, this.y + this.size); // Naar hoekpunt
-            
+            // Teken hoek
+            ctx.moveTo(this.x + this.size, this.y + this.size);
+            ctx.lineTo(this.x, this.y + this.size);
             const radians = (this.angle * Math.PI) / 180;
             const endX = this.x + Math.cos(radians) * this.size;
             const endY = (this.y + this.size) - Math.sin(radians) * this.size;
             ctx.lineTo(endX, endY);
             ctx.stroke();
-            
-            // Boogje
             ctx.beginPath(); ctx.arc(this.x, this.y + this.size, 15, 0, -radians, true); ctx.stroke();
             
         } else {
-            // DRIEHOEKEN TEKENEN
-            // Verplaats context naar de positie van de vijand
+            // Teken driehoek
             ctx.save();
             ctx.translate(this.x, this.y);
             
@@ -353,14 +345,14 @@ class Enemy {
             ctx.moveTo(this.p1.x, this.p1.y);
             ctx.lineTo(this.p2.x, this.p2.y);
             ctx.lineTo(this.p3.x, this.p3.y);
-            ctx.closePath(); // Maakt de driehoek dicht
+            ctx.closePath();
             ctx.stroke();
             
-            // Optioneel: Teken de rechte hoek symbool als hij rechthoekig is
+            // Rechthoek teken bij rechthoekige driehoek
             if (this.data.logic === 'triangle_right') {
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.rect(0, this.size - 10, 10, 10); // Klein vierkantje linksonder
+                ctx.rect(0, this.size - 10, 10, 10);
                 ctx.stroke();
             }
             
@@ -397,18 +389,15 @@ function animate() {
     if (isGameOver) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Sterren
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     stars.forEach(s => {
         s.y += s.speed; if(s.y > canvas.height) s.y = 0;
         ctx.fillRect(s.x, s.y, s.size, s.size);
     });
     
-    // Bodemlijn
     ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, canvas.height-2); ctx.lineTo(canvas.width, canvas.height-2); ctx.stroke();
     
-    // Player
     if (keys['ArrowLeft'] && player.x > 0) player.x -= 6;
     if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += 6;
     ctx.fillStyle = player.color;
@@ -419,26 +408,22 @@ function animate() {
     ctx.lineTo(player.x, player.y + player.height);
     ctx.fill();
     
-    // Kogels
     for (let i=0; i<bullets.length; i++) {
         let b = bullets[i]; b.y -= b.speed;
         ctx.fillStyle = b.color; ctx.fillRect(b.x-3, b.y, 6, 12);
         if(b.y < 0) { bullets.splice(i,1); i--; }
     }
     
-    // Particles
     for(let i=0; i<particles.length; i++) {
         particles[i].update(); particles[i].draw();
         if(particles[i].size <= 0.2) { particles.splice(i,1); i--; }
     }
     
-    // Vijanden
     if (gameFrame % 90 === 0) enemies.push(new Enemy());
     
     for (let i=0; i<enemies.length; i++) {
         let e = enemies[i]; e.update(); e.draw();
         
-        // Collision Bullet
         for(let j=0; j<bullets.length; j++) {
             let b = bullets[j];
             if(b.x > e.x-10 && b.x < e.x+e.size+10 && b.y > e.y && b.y < e.y+e.size) {
@@ -458,7 +443,6 @@ function animate() {
             }
         }
         
-        // Bodem
         if(e.y > canvas.height) {
             enemies.splice(i,1); i--;
             lives--;
