@@ -347,6 +347,17 @@
                 const data = JSON.parse(jsonStr);
 
                 if (data.lvl && typeof data.lvl === 'number' && data.lvl >= 1 && data.lvl <= 3) {
+                    // VERIFICATION STEP
+                    let inputName = prompt("Ter verificatie: Wat is de naam bij deze code?");
+                    if (!inputName) return; // Cancelled
+
+                    let storedName = data.name || "Speler";
+
+                    if (inputName.trim().toLowerCase() !== storedName.trim().toLowerCase()) {
+                        alert("Naam komt niet overeen met deze code.");
+                        return;
+                    }
+
                     if (confirm(`Wil je voortgang laden van ${data.name || "Onbekend"} (Level ${data.lvl})?`)) {
                         localStorage.setItem('geoDefenderProgress', data.lvl);
                         if (data.name) localStorage.setItem('geoDefenderPlayerName', data.name);
@@ -422,7 +433,7 @@
                     'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' },
                     'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' },
                     'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' },
-                    'type4': { label: 'Ongelijkzijdig', color: '#ecf0f1', logic: 'triangle_random' }
+                    'type4': { label: 'Overige', color: '#ecf0f1', logic: 'triangle_random' }
                 }
             },
             'rekenen': {
