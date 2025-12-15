@@ -185,15 +185,15 @@
         <p>Haal <span style="color:#f1c40f">150 punten</span> om het volgende level te openen!</p>
 
         <button id="btn-lvl1" class="mode-btn" onclick="startGame('hoeken')">
-            1. Hoeken Herkennen
+            1. Hoeken Herkennen <span id="hs-1" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <button id="btn-lvl2" class="mode-btn locked" onclick="startGame('driehoeken')">
-            🔒 2. Driehoeken Zien
+            🔒 2. Driehoeken Zien <span id="hs-2" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <button id="btn-lvl3" class="mode-btn math locked" onclick="startGame('rekenen')">
-            🔒 3. Rekensom (Bloom)
+            🔒 3. Rekensom (Bloom) <span id="hs-3" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <div class="reset-link" onclick="resetProgress()">[Reset Progressie]</div>
@@ -204,9 +204,9 @@
                 style="padding: 10px; width: 70%; background: #222; border: 1px solid #4ecca3; color: white; border-radius: 4px;">
             <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: center;">
                 <button class="mode-btn" style="padding: 10px; font-size: 14px; margin: 0; width: auto;"
-                    onclick="exportProgress()">Kopieer Code 📋</button>
+                    onclick="exportProgress()">Voortgang opslaan 📋</button>
                 <button class="mode-btn" style="padding: 10px; font-size: 14px; margin: 0; width: auto;"
-                    onclick="importProgress()">Laad Code 📥</button>
+                    onclick="importProgress()">Code laden 📥</button>
             </div>
         </div>
     </div>
@@ -243,24 +243,48 @@
         /* --- PROGRESSIE --- */
         let userProgress = localStorage.getItem('geoDefenderProgress') || 1;
         userProgress = parseInt(userProgress);
+        let highscores = JSON.parse(localStorage.getItem('geoDefenderHighscores')) || { 1: 0, 2: 0, 3: 0 };
+        let playerName = localStorage.getItem('geoDefenderPlayerName') || "Speler";
 
         function updateMenu() {
             if (userProgress >= 2) {
                 let btn2 = document.getElementById('btn-lvl2');
                 btn2.classList.remove('locked');
                 btn2.innerText = "2. Driehoeken Zien";
+
+                // Restore highscore span inside button
+                let span = document.createElement('span');
+                span.id = 'hs-2';
+                span.style.fontSize = '0.8em';
+                span.style.color = '#f1c40f';
+                span.style.float = 'right';
+                btn2.appendChild(span);
             }
             if (userProgress >= 3) {
                 let btn3 = document.getElementById('btn-lvl3');
                 btn3.classList.remove('locked');
                 btn3.innerText = "3. Rekensom (Bloom)";
+
+                // Restore highscore span inside button
+                let span = document.createElement('span');
+                span.id = 'hs-3';
+                span.style.fontSize = '0.8em';
+                span.style.color = '#f1c40f';
+                span.style.float = 'right';
+                btn3.appendChild(span);
             }
+
+            // Update Scores display
+            if (highscores[1] > 0) document.getElementById('hs-1').innerText = `🏆 ${highscores[1]}`;
+            if (highscores[2] > 0 && document.getElementById('hs-2')) document.getElementById('hs-2').innerText = `🏆 ${highscores[2]}`;
+            if (highscores[3] > 0 && document.getElementById('hs-3')) document.getElementById('hs-3').innerText = `🏆 ${highscores[3]}`;
         }
         updateMenu();
 
         function resetProgress() {
             if (confirm("Weet je zeker dat je alle voortgang wilt wissen?")) {
                 localStorage.setItem('geoDefenderProgress', 1);
+                localStorage.setItem('geoDefenderHighscores', JSON.stringify({ 1: 0, 2: 0, 3: 0 }));
                 location.reload();
             }
         }
@@ -283,9 +307,19 @@
         }
 
         function exportProgress() {
+            let name = prompt("Wat is je naam?", playerName);
+            if (name) {
+                playerName = name;
+                localStorage.setItem('geoDefenderPlayerName', playerName);
+            } else {
+                name = playerName;
+            }
+
             // We voegen een 'salt' toe zodat de code er elke keer anders uit kan zien of gewoon wat complexer is
             const data = {
                 lvl: userProgress,
+                name: name,
+                scores: highscores,
                 salt: Math.floor(Math.random() * 10000)
             };
             const jsonStr = JSON.stringify(data);
@@ -313,8 +347,12 @@
                 const data = JSON.parse(jsonStr);
 
                 if (data.lvl && typeof data.lvl === 'number' && data.lvl >= 1 && data.lvl <= 3) {
-                    if (confirm(`Wil je voortgang laden naar Level ${data.lvl}?`)) {
+                    if (confirm(`Wil je voortgang laden van ${data.name || "Onbekend"} (Level ${data.lvl})?`)) {
                         localStorage.setItem('geoDefenderProgress', data.lvl);
+                        if (data.name) localStorage.setItem('geoDefenderPlayerName', data.name);
+                        if (data.scores) localStorage.setItem('geoDefenderHighscores', JSON.stringify(data.scores));
+
+                        alert(`Welkom terug, ${data.name || "Speler"}!`);
                         location.reload();
                     }
                 } else {
@@ -752,6 +790,12 @@
                     setTimeout(() => canvas.style.transform = "none", 50);
                     if (lives <= 0) {
                         isGameOver = true;
+                        // Check highscore
+                        if (score > highscores[currentMode.id]) {
+                            highscores[currentMode.id] = score;
+                            localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
+                        }
+
                         document.getElementById('final-score').innerText = score;
                         document.getElementById('game-over').style.display = 'block';
                     }
