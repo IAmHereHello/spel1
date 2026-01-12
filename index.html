@@ -221,14 +221,15 @@
     <div id="game-over" class="overlay-screen">
         <h1 style="color: #ff4757;">GAME OVER</h1>
         <p>Score: <span id="final-score">0</span></p>
-        <button class="mode-btn restart-btn" onclick="location.reload()">Probeer Opnieuw</button>
+        <button class="mode-btn restart-btn" onclick="returnToMenu()">Terug naar Menu</button>
+        <button class="mode-btn" onclick="location.reload()">Probeer Opnieuw</button>
     </div>
 
     <div id="level-complete" class="overlay-screen">
         <h1 style="color: #f1c40f;">MISSIE VOLTOOID!</h1>
         <p>Geweldig! Het volgende level is vrijgespeeld.</p>
 
-        <button class="mode-btn next-btn" onclick="location.reload()">Terug naar Menu</button>
+        <button class="mode-btn next-btn" onclick="returnToMenu()">Terug naar Menu</button>
         <button class="mode-btn continue-btn" onclick="continuePlaying()">Doorspelen 🚀</button>
     </div>
 
@@ -406,6 +407,35 @@
             }).catch(err => {
                 prompt("Kopieer deze code handmatig:", hexCode);
             });
+
+            // Upload total score
+            let totalScore = (highscores[1] || 0) + (highscores[2] || 0) + (highscores[3] || 0);
+            uploadScore(playerName, totalScore);
+        }
+
+        function uploadScore(spelernaam, behaaldeScore) {
+            const url = "https://script.google.com/macros/s/AKfycbwPJCXkBr7xxL411uEvPX6P8w8QVA8Dl3Z0rBG8o8UoSdW3TyYPs1Za-2Nxk0C7inAbAQ/exec";
+
+            const data = {
+                naam: spelernaam,
+                score: behaaldeScore
+            };
+
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8",
+                },
+                body: JSON.stringify(data),
+            })
+                .then((response) => response.json())
+                .then((result) => {
+                    console.log("Score is geüpload!", result);
+                    alert("Je score is opgeslagen en geüpload naar het bord!");
+                })
+                .catch((error) => {
+                    console.error("Fout bij uploaden:", error);
+                });
         }
 
         function importProgress() {
@@ -717,6 +747,20 @@
 
             // Hervat loop
             animate();
+        }
+
+        function returnToMenu() {
+            // Hide all game screens
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('level-complete').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'none';
+            document.getElementById('ui').style.display = 'none';
+
+            // Show menu
+            document.getElementById('main-menu').style.display = 'block';
+            isGameOver = true; // Stop game loop
+            isRunning = false; // Allow restart
+            updateMenu();
         }
 
         function setupUIButtons() {
