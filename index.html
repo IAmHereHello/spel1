@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Geometry Defender: Endless</title>
+    <title>Space Invader - Maths Edition</title>
     <style>
         body {
             margin: 0;
@@ -178,9 +178,15 @@
 
 <body>
 
-    <h2>Geometry Defender</h2>
+    <h2>Space Invader - Maths Edition</h2>
 
-    <div id="main-menu" class="overlay-screen">
+    <div id="landing-screen" class="overlay-screen">
+        <h1 style="color: #4ecca3;">Welkom</h1>
+        <button class="mode-btn" onclick="handleNewGame()">Eerste keer spelen</button>
+        <button class="mode-btn" onclick="handleLoadGame()">Al eerder gespeeld</button>
+    </div>
+
+    <div id="main-menu" class="overlay-screen" style="display:none;">
         <h1>Kies Missie</h1>
         <p>Haal <span style="color:#f1c40f">150 punten</span> om het volgende level te openen!</p>
 
@@ -235,30 +241,18 @@
             style="font-size: 20px; text-align: left; background: #222; padding: 15px; border-radius: 10px; border: 2px solid #555;">
             ...
         </p>
-        <button class="mode-btn" onclick="finishStory()">Begrepen, Generaal!</button>
+        <button class="mode-btn" onclick="finishStory()">Ga naar Level Menu</button>
     </div>
 
-    <!-- NIEUW: Instructie Scherm -->
-    <div id="instruction-screen" class="overlay-screen" style="display:none; max-width:600px;">
-        <h1 style="color: #4ecca3;">Uitleg: Hoeken</h1>
-        <div style="display:flex; justify-content:space-around; margin: 20px 0; text-align:left; gap: 20px;">
-            <div>
-                <h3 style="color:#2ecc71">Scherp (< 90°)</h3>
-                        <p>Als een hoek kleiner is dan de hoek van een vierkant (90°).</p>
-                        <div
-                            style="width:50px; height:50px; border-bottom: 2px solid white; border-right:2px solid white; transform: skewX(20deg);">
-                        </div>
-            </div>
-            <div>
-                <h3 style="color:#e67e22">Stomp (> 90°)</h3>
-                <p>Als een hoek groter is dan 90°, maar kleiner dan gestrekt (180°).</p>
-                <div
-                    style="width:50px; height:50px; border-bottom: 2px solid white; border-left:2px solid white; transform: skewX(-20deg);">
-                </div>
-            </div>
+    <div id="instruction-screen" class="overlay-screen" style="display:none; max-width:700px;">
+        <h1 id="briefing-title" style="color: #4ecca3;">Uitleg</h1>
+        <div id="briefing-content"
+            style="display:flex; justify-content:space-around; margin: 20px 0; text-align:left; gap: 20px;">
+            <!-- Content Injected -->
         </div>
-        <p>Kijk goed naar de lijnen van de vijanden!</p>
-        <button class="mode-btn" onclick="startPracticeMode()">Start Oefenen</button>
+    </div>
+    <p>Kijk goed naar de lijnen van de vijanden!</p>
+    <button class="mode-btn" onclick="startPracticeMode()">Start Oefenen</button>
     </div>
 
     <!-- NIEUW: Oefen Scherm Overlay (voor controls) -->
@@ -299,11 +293,44 @@
         userProgress = parseInt(userProgress);
         let highscores = JSON.parse(localStorage.getItem('geoDefenderHighscores')) || { 1: 0, 2: 0, 3: 0 };
         let playerName = localStorage.getItem('geoDefenderPlayerName');
+        // Removed auto-prompt logic. Done in handles now.
 
-        if (!playerName) {
+        function handleNewGame() {
             playerName = prompt("Welkom! Wat is jouw naam, Generaal?", "Speler") || "Speler";
             localStorage.setItem('geoDefenderPlayerName', playerName);
+
+            // Show Story
+            document.getElementById('landing-screen').style.display = 'none';
+            showStoryIntro();
         }
+
+        function handleLoadGame() {
+            document.getElementById('landing-screen').style.display = 'none';
+            // Open menu directly but we need code. importProgress uses prompt or input.
+            // Let's show main menu and trigger import? Or just prompt directly?
+            // "Prompt voor de code" requested.
+            let code = prompt("Voer je save code in:");
+            if (code) {
+                // Determine if valid
+                try {
+                    let jsonStr = hexToString(code);
+                    let data = JSON.parse(jsonStr);
+                    // Check if valid code
+                    if (data.lvl) {
+                        localStorage.setItem('geoDefenderProgress', data.lvl);
+                        if (data.name) localStorage.setItem('geoDefenderPlayerName', data.name);
+                        if (data.scores) localStorage.setItem('geoDefenderHighscores', JSON.stringify(data.scores));
+                        location.reload(); // Reload to refresh everything properly
+                    }
+                } catch (e) {
+                    alert("Ongeldige code.");
+                    location.reload();
+                }
+            } else {
+                location.reload();
+            }
+        }
+
 
         function updateMenu() {
             if (userProgress >= 2) {
@@ -530,14 +557,81 @@
         let isPractice = false; // NIEUW
 
         function startFlow(modeKey) {
-            if (modeKey === 'hoeken') {
-                // Show instruction first
-                document.getElementById('main-menu').style.display = 'none';
-                document.getElementById('instruction-screen').style.display = 'block';
-                currentMode = GAME_MODES[modeKey]; // Pre-set for later
-            } else {
-                // Normal flow for other levels (Driehoeken)
+            // Check Highscore
+            let mode = GAME_MODES[modeKey];
+            currentMode = mode; // Set global
+
+            if (highscores[mode.id] > 0) {
+                // Already played/scored -> Skip Briefing
                 startGame(modeKey, false);
+            } else {
+                // No score -> Function explanation
+                showBriefing(modeKey);
+            }
+        }
+
+        function showStoryIntro() {
+            document.getElementById('story-screen').style.display = 'flex';
+            document.getElementById('story-text').innerText = `WELKOM GENERAAL ${playerName.toUpperCase()}! We worden aangevallen door de hoeken! Ze komen recht op ons af! Verdedig de basis.`;
+        }
+
+        function finishStory() {
+            document.getElementById('story-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'block';
+            updateMenu(); // Ensure menu is fresh
+        }
+
+        function showBriefing(modeKey) {
+            document.getElementById('main-menu').style.display = 'none';
+            const screen = document.getElementById('instruction-screen');
+            const title = document.getElementById('briefing-title');
+            const content = document.getElementById('briefing-content');
+            screen.style.display = 'block';
+
+            if (modeKey === 'level1') {
+                title.innerText = "Briefing: Scherp & Stomp";
+                content.innerHTML = `
+                    <div>
+                        <h3 style="color:#2ecc71">Scherp (< 90°)</h3>
+                        <p>Kleiner dan een 'L' (90°).</p>
+                         <div style="width:60px; height:60px; border-bottom: 4px solid white; border-right: 4px solid white; transform: skewX(20deg); margin: 0 auto;"></div>
+                    </div>
+                    <div>
+                        <h3 style="color:#e67e22">Stomp (> 90°)</h3>
+                        <p>Groter dan een 'L' (90°).</p>
+                        <div style="width:60px; height:60px; border-bottom: 4px solid white; border-left: 4px solid white; transform: skewX(-20deg); margin: 0 auto;"></div>
+                    </div>
+                `;
+            } else if (modeKey === 'level2') {
+                title.innerText = "Briefing: Recht & Gestrekt";
+                content.innerHTML = `
+                    <div>
+                        <h3 style="color:#3498db">Recht (= 90°)</h3>
+                        <p>Precies een 'L' vorm.</p>
+                        <div style="width:50px; height:50px; border-bottom: 4px solid white; border-left: 4px solid white; margin: 10px auto;"></div>
+                    </div>
+                    <div>
+                        <h3 style="color:#9b59b6">Gestrekt (= 180°)</h3>
+                        <p>Een rechte lijn.</p>
+                        <div style="width:80px; height:4px; background: white; margin: 30px auto;"></div>
+                    </div>
+                `;
+            } else if (modeKey === 'level3') {
+                title.innerText = "Briefing: Driehoeken";
+                content.innerHTML = `
+                    <div>
+                        <h3 style="color:#f1c40f">Gelijkzijdig</h3>
+                        <svg width="60" height="60"><polygon points="30,5 5,55 55,55" style="fill:none;stroke:white;stroke-width:3" /></svg>
+                    </div>
+                    <div>
+                        <h3 style="color:#e67e22">Gelijkbenig</h3>
+                        <svg width="60" height="60"><polygon points="30,5 15,55 45,55" style="fill:none;stroke:white;stroke-width:3" /></svg>
+                    </div>
+                    <div>
+                        <h3 style="color:#3498db">Rechthoekig</h3>
+                         <svg width="60" height="60"><polygon points="5,5 5,55 55,55" style="fill:none;stroke:white;stroke-width:3" /></svg>
+                    </div>
+                `;
             }
         }
 
@@ -550,7 +644,13 @@
             document.getElementById('instruction-screen').style.display = 'none';
             document.getElementById('practice-overlay').style.display = 'block';
             document.getElementById('practice-controls').style.display = 'block';
-            startGame('hoeken', true);
+
+            // Derive key from currentMode
+            let key = 'level1';
+            if (currentMode && currentMode.id === 2) key = 'level2';
+            if (currentMode && currentMode.id === 3) key = 'level3';
+
+            startGame(key, true);
         }
 
         function startRealMission() {
