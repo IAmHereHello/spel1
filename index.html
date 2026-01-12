@@ -404,8 +404,11 @@
                 score: behaaldeScore
             };
 
+            console.log("Uploading score...", data);
+
             fetch(url, {
                 method: "POST",
+                redirect: "follow",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8",
                 },
@@ -414,7 +417,7 @@
                 .then((response) => response.json())
                 .then((result) => {
                     console.log("Score is geüpload!", result);
-                    alert("Je score is opgeslagen en geüpload naar het bord!");
+                    // alert("Je score is opgeslagen en geüpload naar het bord!"); // User might not want alert every time now
                 })
                 .catch((error) => {
                     console.error("Fout bij uploaden:", error);
@@ -800,6 +803,9 @@
                     localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
                 }
 
+                // Upload Score Automatically
+                uploadScore(playerName, score);
+
                 isGameOver = true; // Pauzeer even
                 playSound('win');
 
@@ -1036,6 +1042,9 @@
                             highscores[currentMode.id] = score;
                             localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
                         }
+
+                        // Upload Score Automatically
+                        uploadScore(playerName, score);
 
                         document.getElementById('final-score').innerText = score;
                         document.getElementById('game-over').style.display = 'block';
