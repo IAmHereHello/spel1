@@ -701,6 +701,14 @@
                 let baseSpeed = (Math.random() * 1.5 + 1);
                 this.speed = baseSpeed + (difficultyFactor * 3);
 
+                if (isPractice) {
+                    // Center vertically
+                    this.y = (canvas.height / 2) - 100 + (Math.random() * 50); // Roughly center
+                    this.speed = 0; // No speed
+                } else {
+                    this.y = -70;
+                }
+
                 const keys = Object.keys(currentTypes);
                 this.typeKey = keys[Math.floor(Math.random() * keys.length)];
                 this.data = currentTypes[this.typeKey];
