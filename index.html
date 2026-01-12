@@ -184,16 +184,12 @@
         <h1>Kies Missie</h1>
         <p>Haal <span style="color:#f1c40f">150 punten</span> om het volgende level te openen!</p>
 
-        <button id="btn-lvl1" class="mode-btn" onclick="startGame('hoeken')">
+        <button id="btn-lvl1" class="mode-btn" onclick="startFlow('hoeken')">
             1. Hoeken Herkennen <span id="hs-1" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <button id="btn-lvl2" class="mode-btn locked" onclick="startGame('driehoeken')">
             🔒 2. Driehoeken Zien <span id="hs-2" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
-        </button>
-
-        <button id="btn-lvl3" class="mode-btn math locked" onclick="startGame('rekenen')">
-            🔒 3. Rekensom (Bloom) <span id="hs-3" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <div class="reset-link" onclick="resetProgress()">[Reset Progressie]</div>
@@ -223,6 +219,47 @@
 
         <button class="mode-btn next-btn" onclick="location.reload()">Terug naar Menu</button>
         <button class="mode-btn continue-btn" onclick="continuePlaying()">Doorspelen 🚀</button>
+    </div>
+
+    <!-- NIEUW: Instructie Scherm -->
+    <div id="instruction-screen" class="overlay-screen" style="display:none; max-width:600px;">
+        <h1 style="color: #4ecca3;">Uitleg: Hoeken</h1>
+        <div style="display:flex; justify-content:space-around; margin: 20px 0; text-align:left; gap: 20px;">
+            <div>
+                <h3 style="color:#2ecc71">Scherp (< 90°)</h3>
+                        <p>Als een hoek kleiner is dan de hoek van een vierkant (90°).</p>
+                        <div
+                            style="width:50px; height:50px; border-bottom: 2px solid white; border-right:2px solid white; transform: skewX(20deg);">
+                        </div>
+            </div>
+            <div>
+                <h3 style="color:#e67e22">Stomp (> 90°)</h3>
+                <p>Als een hoek groter is dan 90°, maar kleiner dan gestrekt (180°).</p>
+                <div
+                    style="width:50px; height:50px; border-bottom: 2px solid white; border-left:2px solid white; transform: skewX(-20deg);">
+                </div>
+            </div>
+        </div>
+        <p>Kijk goed naar de lijnen van de vijanden!</p>
+        <button class="mode-btn" onclick="startPracticeMode()">Start Oefenen</button>
+    </div>
+
+    <!-- NIEUW: Oefen Scherm Overlay (voor controls) -->
+    <div id="practice-overlay"
+        style="position: absolute; top: 100px; left: 50%; transform: translateX(-50%); text-align: center; display: none; z-index: 50; pointer-events: none;">
+        <h2 style="color:white; background:rgba(0,0,0,0.7); padding: 10px; border-radius:10px;">Oefen Modus</h2>
+        <p style="background:rgba(0,0,0,0.7); padding: 10px; border-radius:10px;">
+            1. Gebruik <b>toetsen 1-4</b> om het juiste type kogel te kiezen.<br>
+            2. Gebruik <b>Spatie</b> om te schieten.<br>
+            3. Raak de stilstaande doelen om te oefenen!<br><br>
+            <i>De vijanden bewegen niet in deze modus.</i>
+        </p>
+    </div>
+
+    <div id="practice-controls" style="position: absolute; bottom: 20px; right: 20px; display: none; z-index: 60;">
+        <button class="mode-btn"
+            style="padding: 15px 30px; font-weight:bold; background: #f1c40f; color: black; border:none;"
+            onclick="startRealMission()">START NIEUWE MISSIE &raquo;</button>
     </div>
 
     <div id="ui">
@@ -260,31 +297,17 @@
                 span.style.float = 'right';
                 btn2.appendChild(span);
             }
-            if (userProgress >= 3) {
-                let btn3 = document.getElementById('btn-lvl3');
-                btn3.classList.remove('locked');
-                btn3.innerText = "3. Rekensom (Bloom)";
-
-                // Restore highscore span inside button
-                let span = document.createElement('span');
-                span.id = 'hs-3';
-                span.style.fontSize = '0.8em';
-                span.style.color = '#f1c40f';
-                span.style.float = 'right';
-                btn3.appendChild(span);
-            }
 
             // Update Scores display
             if (highscores[1] > 0) document.getElementById('hs-1').innerText = `🏆 ${highscores[1]}`;
             if (highscores[2] > 0 && document.getElementById('hs-2')) document.getElementById('hs-2').innerText = `🏆 ${highscores[2]}`;
-            if (highscores[3] > 0 && document.getElementById('hs-3')) document.getElementById('hs-3').innerText = `🏆 ${highscores[3]}`;
         }
         updateMenu();
 
         function resetProgress() {
             if (confirm("Weet je zeker dat je alle voortgang wilt wissen?")) {
                 localStorage.setItem('geoDefenderProgress', 1);
-                localStorage.setItem('geoDefenderHighscores', JSON.stringify({ 1: 0, 2: 0, 3: 0 }));
+                localStorage.setItem('geoDefenderHighscores', JSON.stringify({ 1: 0, 2: 0 }));
                 location.reload();
             }
         }
@@ -435,15 +458,6 @@
                     'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' },
                     'type4': { label: 'Overige', color: '#ecf0f1', logic: 'triangle_random' }
                 }
-            },
-            'rekenen': {
-                id: 3, name: 'Rekenen', speedMultiplier: 0.3,
-                types: {
-                    'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'math_eq' },
-                    'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'math_iso' },
-                    'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'math_right' },
-                    'type4': { label: 'Anders', color: '#ecf0f1', logic: 'math_scalene' }
-                }
             }
         };
 
@@ -474,9 +488,52 @@
             });
         }
 
-        function startGame(modeKey) {
+        let isPractice = false; // NIEUW
+
+        function startFlow(modeKey) {
+            if (modeKey === 'hoeken') {
+                // Show instruction first
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('instruction-screen').style.display = 'block';
+                currentMode = GAME_MODES[modeKey]; // Pre-set for later
+            } else {
+                // Normal flow for other levels (Driehoeken)
+                startGame(modeKey, false);
+            }
+        }
+
+        // Override original onclicks in HTML to use startFlow instead of startGame directly?
+        // Or just modify startGame. Let's make a wrapper or modify existing.
+        // Users onclick="startGame('hoeken')" -> We can change that in HTML or handle it here.
+        // Let's change the onclick in HTML for 'hoeken' to 'startFlow'. 
+
+        function startPracticeMode() {
+            document.getElementById('instruction-screen').style.display = 'none';
+            document.getElementById('practice-overlay').style.display = 'block';
+            document.getElementById('practice-controls').style.display = 'block';
+            startGame('hoeken', true);
+        }
+
+        function startRealMission() {
+            isPractice = false;
+            document.getElementById('practice-overlay').style.display = 'none';
+            document.getElementById('practice-controls').style.display = 'none';
+
+            // Reset game partially
+            enemies = [];
+            bullets = [];
+            particles = [];
+            score = 0;
+            document.getElementById('score').innerText = "0";
+
+            // Play sound
+            playSound('win'); // Just a sound to indicate start
+        }
+
+        function startGame(modeKey, practice = false) {
             currentMode = GAME_MODES[modeKey];
             currentTypes = currentMode.types;
+            isPractice = practice;
 
             // Reset alles
             score = 0;
@@ -597,11 +654,7 @@
                 this.size = 50;
 
                 let baseSpeed = (Math.random() * 1.5 + 1);
-                if (currentMode.name === 'Rekenen') {
-                    this.speed = 0.4 + (difficultyFactor * 0.2);
-                } else {
-                    this.speed = baseSpeed + (difficultyFactor * 3);
-                }
+                this.speed = baseSpeed + (difficultyFactor * 3);
 
                 const keys = Object.keys(currentTypes);
                 this.typeKey = keys[Math.floor(Math.random() * keys.length)];
@@ -629,36 +682,18 @@
                         this.p1.x = this.size * rX; this.p1.y = this.size - (Math.random() * this.size * 1.2 + 20);
                     }
                 } else if (this.data.logic.startsWith('math_')) {
-                    let a, b, c;
-
-                    if (this.data.logic === 'math_eq') {
-                        a = 60; b = 60; c = 60;
-                    } else if (this.data.logic === 'math_iso') {
-                        let base = (Math.floor(Math.random() * 10) + 6) * 5;
-                        if (base === 60) base = 50;
-                        if (base === 45) base = 50;
-                        a = base; b = base; c = 180 - (a + b);
-                    } else if (this.data.logic === 'math_right') {
-                        a = 90;
-                        b = (Math.floor(Math.random() * 8) + 4) * 5;
-                        c = 180 - a - b;
-                    } else {
-                        do {
-                            a = (Math.floor(Math.random() * 12) + 4) * 5;
-                            b = (Math.floor(Math.random() * 12) + 4) * 5;
-                            c = 180 - a - b;
-                        } while (a === b || b === c || a === c || a === 90 || b === 90 || c === 90 || c <= 0);
-                    }
-
-                    let nums = [a, b, c];
-                    let hideIdx = Math.floor(Math.random() * 3);
-                    let display = [...nums];
-                    display[hideIdx] = "?";
-                    this.mathLabel = `${display[0]}°, ${display[1]}°, ${display[2]}`;
+                    // Deleted Math Logic
                 }
             }
 
-            update() { this.y += this.speed; }
+            update() {
+                if (!isPractice) {
+                    this.y += this.speed;
+                } else {
+                    // In practice mode, enemies float gently but don't fall
+                    this.y += Math.sin(Date.now() / 500) * 0.5;
+                }
+            }
 
             draw() {
                 ctx.strokeStyle = 'white';
@@ -735,14 +770,13 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let starSpeedMult = 1 + (difficultyFactor * 4);
-            if (currentMode.name === 'Rekenen') starSpeedMult = 0.5;
 
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
             stars.forEach(s => {
                 s.y += s.speed * starSpeedMult;
                 if (s.y > canvas.height) s.y = 0;
                 let length = s.size;
-                if (currentMode.name !== 'Rekenen') length += (difficultyFactor * 20 * s.size);
+                length += (difficultyFactor * 20 * s.size);
                 ctx.fillRect(s.x, s.y, s.size, length);
             });
 
@@ -773,7 +807,6 @@
             }
 
             let spawnRate = Math.max(30, 90 - (difficultyFactor * 50));
-            if (currentMode.name === 'Rekenen') spawnRate = 180;
 
             if (gameFrame % Math.floor(spawnRate) === 0) enemies.push(new Enemy());
 
