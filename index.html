@@ -301,26 +301,9 @@
 
         function handleLoadGame() {
             document.getElementById('landing-screen').style.display = 'none';
-            // Open menu directly but we need code. importProgress uses prompt or input.
-            // Let's show main menu and trigger import? Or just prompt directly?
-            // "Prompt voor de code" requested.
             let code = prompt("Voer je save code in:");
             if (code) {
-                // Determine if valid
-                try {
-                    let jsonStr = hexToString(code);
-                    let data = JSON.parse(jsonStr);
-                    // Check if valid code
-                    if (data.lvl) {
-                        localStorage.setItem('geoDefenderProgress', data.lvl);
-                        if (data.name) localStorage.setItem('geoDefenderPlayerName', data.name);
-                        if (data.scores) localStorage.setItem('geoDefenderHighscores', JSON.stringify(data.scores));
-                        location.reload(); // Reload to refresh everything properly
-                    }
-                } catch (e) {
-                    alert("Ongeldige code.");
-                    location.reload();
-                }
+                processCode(code);
             } else {
                 location.reload();
             }
@@ -438,6 +421,47 @@
                 });
         }
 
+        function processCode(hexCode) {
+            try {
+                const jsonStr = hexToString(hexCode);
+                const data = JSON.parse(jsonStr);
+
+                if (data.lvl && typeof data.lvl === 'number' && data.lvl >= 1 && data.lvl <= 3) {
+                    let inputName = prompt("Ter verificatie: Wat is de naam bij deze code?");
+                    if (!inputName) { location.reload(); return; }
+
+                    let storedName = data.name || "Speler";
+                    if (inputName.trim().toLowerCase() !== storedName.trim().toLowerCase()) {
+                        alert("Naam komt niet overeen met deze code.");
+                        location.reload();
+                        return;
+                    }
+
+                    if (confirm(`Wil je voortgang laden van ${data.name || "Onbekend"} (Level ${data.lvl})?`)) {
+                        // Update Memory & Storage
+                        userProgress = data.lvl;
+                        playerName = data.name || "Speler";
+                        highscores = data.scores || { 1: 0, 2: 0, 3: 0 };
+
+                        localStorage.setItem('geoDefenderProgress', userProgress);
+                        localStorage.setItem('geoDefenderPlayerName', playerName);
+                        localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
+
+                        alert(`Welkom terug, ${playerName}!`);
+
+                        // Navigate directly to menu without reload
+                        document.getElementById('landing-screen').style.display = 'none';
+                        returnToMenu();
+                    }
+                } else {
+                    throw new Error("Ongeldige data");
+                }
+            } catch (e) {
+                alert("Ongeldige code! Probeer het opnieuw.");
+                location.reload();
+            }
+        }
+
         function importProgress() {
             const input = document.getElementById('save-code-input');
             const hexCode = input.value.trim();
@@ -446,37 +470,7 @@
                 alert("Vul eerst een code in!");
                 return;
             }
-
-            try {
-                const jsonStr = hexToString(hexCode);
-                const data = JSON.parse(jsonStr);
-
-                if (data.lvl && typeof data.lvl === 'number' && data.lvl >= 1 && data.lvl <= 3) {
-                    // VERIFICATION STEP
-                    let inputName = prompt("Ter verificatie: Wat is de naam bij deze code?");
-                    if (!inputName) return; // Cancelled
-
-                    let storedName = data.name || "Speler";
-
-                    if (inputName.trim().toLowerCase() !== storedName.trim().toLowerCase()) {
-                        alert("Naam komt niet overeen met deze code.");
-                        return;
-                    }
-
-                    if (confirm(`Wil je voortgang laden van ${data.name || "Onbekend"} (Level ${data.lvl})?`)) {
-                        localStorage.setItem('geoDefenderProgress', data.lvl);
-                        if (data.name) localStorage.setItem('geoDefenderPlayerName', data.name);
-                        if (data.scores) localStorage.setItem('geoDefenderHighscores', JSON.stringify(data.scores));
-
-                        alert(`Welkom terug, ${data.name || "Speler"}!`);
-                        location.reload();
-                    }
-                } else {
-                    throw new Error("Ongeldige data");
-                }
-            } catch (e) {
-                alert("Ongeldige code! Probeer het opnieuw.");
-            }
+            processCode(hexCode);
         }
 
         /* --- AUDIO --- */
