@@ -184,12 +184,17 @@
         <h1>Kies Missie</h1>
         <p>Haal <span style="color:#f1c40f">150 punten</span> om het volgende level te openen!</p>
 
-        <button id="btn-lvl1" class="mode-btn" onclick="startFlow('hoeken')">
-            1. Hoeken Herkennen <span id="hs-1" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
+        <button id="btn-lvl1" class="mode-btn" onclick="startFlow('level1')">
+            1. De Aanval (Scherp/Stomp) <span id="hs-1" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
-        <button id="btn-lvl2" class="mode-btn locked" onclick="startGame('driehoeken')">
-            🔒 2. Driehoeken Zien <span id="hs-2" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
+        <button id="btn-lvl2" class="mode-btn locked" onclick="startGame('level2')">
+            🔒 2. Versterking (Alle Hoeken) <span id="hs-2"
+                style="font-size:0.8em; color: #f1c40f; float:right;"></span>
+        </button>
+
+        <button id="btn-lvl3" class="mode-btn locked" onclick="startGame('level3')">
+            🔒 3. Driehoeken <span id="hs-3" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
         </button>
 
         <div class="reset-link" onclick="resetProgress()">[Reset Progressie]</div>
@@ -219,6 +224,18 @@
 
         <button class="mode-btn next-btn" onclick="location.reload()">Terug naar Menu</button>
         <button class="mode-btn continue-btn" onclick="continuePlaying()">Doorspelen 🚀</button>
+    </div>
+
+    <!-- NIEUW: Story Screen -->
+    <div id="story-screen" class="overlay-screen"
+        style="display:none; max-width:600px; flex-direction:column; align-items:center;">
+        <h1 style="color: #e74c3c;">ALARM FASE 1</h1>
+        <div style="font-size: 60px;">🫡</div>
+        <p id="story-text"
+            style="font-size: 20px; text-align: left; background: #222; padding: 15px; border-radius: 10px; border: 2px solid #555;">
+            ...
+        </p>
+        <button class="mode-btn" onclick="finishStory()">Begrepen, Generaal!</button>
     </div>
 
     <!-- NIEUW: Instructie Scherm -->
@@ -281,26 +298,40 @@
         let userProgress = localStorage.getItem('geoDefenderProgress') || 1;
         userProgress = parseInt(userProgress);
         let highscores = JSON.parse(localStorage.getItem('geoDefenderHighscores')) || { 1: 0, 2: 0, 3: 0 };
-        let playerName = localStorage.getItem('geoDefenderPlayerName') || "Speler";
+        let playerName = localStorage.getItem('geoDefenderPlayerName');
+
+        if (!playerName) {
+            playerName = prompt("Welkom! Wat is jouw naam, Generaal?", "Speler") || "Speler";
+            localStorage.setItem('geoDefenderPlayerName', playerName);
+        }
 
         function updateMenu() {
             if (userProgress >= 2) {
                 let btn2 = document.getElementById('btn-lvl2');
                 btn2.classList.remove('locked');
-                btn2.innerText = "2. Driehoeken Zien";
-
-                // Restore highscore span inside button
-                let span = document.createElement('span');
-                span.id = 'hs-2';
-                span.style.fontSize = '0.8em';
-                span.style.color = '#f1c40f';
-                span.style.float = 'right';
-                btn2.appendChild(span);
+                btn2.innerText = "2. Versterking (Alle Hoeken)";
+                addHighscoreSpan(btn2, 2);
+            }
+            if (userProgress >= 3) {
+                let btn3 = document.getElementById('btn-lvl3');
+                btn3.classList.remove('locked');
+                btn3.innerText = "3. Driehoeken";
+                addHighscoreSpan(btn3, 3);
             }
 
             // Update Scores display
             if (highscores[1] > 0) document.getElementById('hs-1').innerText = `🏆 ${highscores[1]}`;
             if (highscores[2] > 0 && document.getElementById('hs-2')) document.getElementById('hs-2').innerText = `🏆 ${highscores[2]}`;
+            if (highscores[3] > 0 && document.getElementById('hs-3')) document.getElementById('hs-3').innerText = `🏆 ${highscores[3]}`;
+        }
+
+        function addHighscoreSpan(btn, id) {
+            let span = document.createElement('span');
+            span.id = 'hs-' + id;
+            span.style.fontSize = '0.8em';
+            span.style.color = '#f1c40f';
+            span.style.float = 'right';
+            btn.appendChild(span);
         }
         updateMenu();
 
@@ -441,17 +472,25 @@
         }
 
         const GAME_MODES = {
-            'hoeken': {
-                id: 1, name: 'Hoeken', speedMultiplier: 1.0,
+            'level1': {
+                id: 1, name: 'Hoeken Aanval', speedMultiplier: 0.8,
                 types: {
                     'type1': { label: 'Scherp', color: '#2ecc71', logic: 'angle', min: 15, max: 85 },
-                    'type2': { label: 'Recht', color: '#3498db', logic: 'angle', min: 90, max: 90 },
-                    'type3': { label: 'Stomp', color: '#e67e22', logic: 'angle', min: 95, max: 175 },
+                    'type2': { label: 'Stomp', color: '#e67e22', logic: 'angle', min: 95, max: 175 }
+                    // Level 1: Only Sharp & Obtuse
+                }
+            },
+            'level2': {
+                id: 2, name: 'Versterking', speedMultiplier: 1.0,
+                types: {
+                    'type1': { label: 'Scherp', color: '#2ecc71', logic: 'angle', min: 15, max: 85 },
+                    'type2': { label: 'Stomp', color: '#e67e22', logic: 'angle', min: 95, max: 175 },
+                    'type3': { label: 'Recht', color: '#3498db', logic: 'angle', min: 90, max: 90 },
                     'type4': { label: 'Gestrekt', color: '#9b59b6', logic: 'angle', min: 180, max: 180 }
                 }
             },
-            'driehoeken': {
-                id: 2, name: 'Driehoeken', speedMultiplier: 1.0,
+            'level3': {
+                id: 3, name: 'Driehoeken', speedMultiplier: 1.0,
                 types: {
                     'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' },
                     'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' },
@@ -584,6 +623,11 @@
         }
 
         function setupUIButtons() {
+            // Reset all first
+            for (let j = 1; j <= 4; j++) {
+                document.getElementById('ui-' + j).style.display = 'none';
+            }
+
             let i = 1;
             for (let key in currentTypes) {
                 let el = document.getElementById('ui-' + i);
@@ -592,6 +636,7 @@
                 el.style.backgroundColor = data.color;
                 el.style.color = '#000';
                 el.style.borderColor = "#555";
+                el.style.display = 'block'; // Show if used
                 i++;
             }
         }
