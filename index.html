@@ -250,9 +250,19 @@
             style="display:flex; justify-content:space-around; margin: 20px 0; text-align:left; gap: 20px;">
             <!-- Content Injected -->
         </div>
-    </div>
-    <p>Kijk goed naar de lijnen van de vijanden!</p>
-    <button class="mode-btn" onclick="startPracticeMode()">Start Oefenen</button>
+
+        <div
+            style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h3 style="margin-top:0; color: #f1c40f;">Hoe te spelen:</h3>
+            <p style="margin: 5px;">1. Gebruik <b>toetsen 1-4</b> voor munitie.</p>
+            <p style="margin: 5px;">2. Gebruik <b>Spatie</b> om te schieten.</p>
+            <p style="margin: 5px;">3. Raak de doelen!</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="mode-btn" style="width: auto; padding: 10px 30px; font-size: 18px;"
+                onclick="startPracticeMode()">Start Oefenen</button>
+        </div>
     </div>
 
 
@@ -626,8 +636,8 @@
 
         function startPracticeMode() {
             document.getElementById('instruction-screen').style.display = 'none';
-            document.getElementById('practice-overlay').style.display = 'block';
-            document.getElementById('practice-controls').style.display = 'block';
+
+
 
             // Derive key from currentMode
             let key = 'level1';
@@ -635,12 +645,15 @@
             if (currentMode && currentMode.id === 3) key = 'level3';
 
             startGame(key, true);
+
+            // Spawn 5 static enemies
+            enemies = [];
+            for (let i = 0; i < 5; i++) enemies.push(new Enemy());
         }
 
         function startRealMission() {
             isPractice = false;
-            document.getElementById('practice-overlay').style.display = 'none';
-            document.getElementById('practice-controls').style.display = 'none';
+
 
             // Reset game partially
             enemies = [];
