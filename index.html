@@ -8,654 +8,531 @@
     <style>
         body {
             margin: 0;
-            background: #000;
+            background-color: #222;
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            user-select: none;
+            min-height: 100vh;
+            overflow: hidden;
             touch-action: none;
+            /* Prevent scroll/zoom on mobile */
         }
 
-        h2 {
-            margin: 5px 0;
-            text-shadow: 0 0 10px #4ecca3;
-            z-index: 10;
-            text-align: center;
-            font-size: 1.2rem;
-            /* Smaller for mobile */
-        }
-
-        #game-container {
+        #game-wrapper {
             position: relative;
             width: 100%;
             max-width: 800px;
-            /* Force max width */
             display: flex;
-            justify-content: center;
             flex-direction: column;
             align-items: center;
         }
 
-        #gameCanvas {
+        /* Canvas maintains aspect ratio but scales down */
+        canvas {
             background: #111;
-            border: 2px solid #4ecca3;
+            border: 4px solid #4ecca3;
             box-shadow: 0 0 20px rgba(78, 204, 163, 0.2);
             border-radius: 4px;
-            display: none;
-            /* Hidden until game starts */
-
-            /* Responsive Magic */
             width: 100%;
             height: auto;
+            display: block;
             aspect-ratio: 4/3;
         }
 
-        .overlay-screen {
+        /* Overlays (Menu, Game Over, Win) */
+        .overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(10, 10, 20, 0.95);
-            padding: 20px;
+            background: rgba(15, 15, 25, 0.95);
+            padding: 30px;
             border: 2px solid #4ecca3;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 0 50px rgba(78, 204, 163, 0.3);
-            z-index: 100;
-            width: 85%;
+            width: 80%;
             max-width: 400px;
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
         }
 
-        .mode-btn {
-            display: block;
-            width: 100%;
-            margin: 10px 0;
-            padding: 12px;
-            font-size: 16px;
+        h1 {
+            margin-top: 0;
+            color: #4ecca3;
+            font-size: 24px;
+        }
+
+        p {
+            color: #ccc;
+            margin: 15px 0;
+        }
+
+        button {
             background: #1a1a2e;
             color: #4ecca3;
-            border: 1px solid #4ecca3;
+            border: 2px solid #4ecca3;
+            padding: 12px 24px;
+            font-size: 16px;
             cursor: pointer;
             border-radius: 6px;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.2s;
         }
 
-        .mode-btn:active {
+        button:hover,
+        button:active {
             background: #4ecca3;
-            color: #000;
+            color: black;
+            transform: scale(1.02);
         }
 
-        /* Input styling */
-        input[type="text"] {
+        input {
+            width: 90%;
             padding: 10px;
-            width: 80%;
             background: #222;
-            border: 1px solid #4ecca3;
+            border: 1px solid #555;
             color: white;
             border-radius: 4px;
-            margin-bottom: 10px;
             text-align: center;
+            font-size: 16px;
+            margin-bottom: 15px;
         }
 
-        /* UI HUD (Ammo) */
-        #ui {
-            margin-top: 5px;
-            display: none;
-            /* Flex when playing */
-            gap: 5px;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .ammo-type {
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #555;
-            background: rgba(0, 0, 0, 0.5);
-            opacity: 0.5;
-            font-size: 12px;
-            min-width: 50px;
-            text-align: center;
-        }
-
-        .ammo-type.active {
-            opacity: 1;
-            border-color: white;
-            background: rgba(78, 204, 163, 0.2);
-        }
-
-        /* Touch Controls */
+        /* HUD - Bottom Touch Controls */
         #touch-controls {
             display: flex;
-            /* Always flex, let user decide usage */
             width: 100%;
-            max-width: 800px;
-            margin-top: 10px;
             justify-content: space-between;
+            margin-top: 10px;
             padding: 0 10px;
             box-sizing: border-box;
-            z-index: 20;
         }
 
         .t-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            color: white;
-            border-radius: 8px;
-            font-size: 24px;
-            user-select: none;
-            touch-action: manipulation;
             width: 60px;
             height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            user-select: none;
+            cursor: pointer;
         }
 
         .t-btn:active {
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
         }
 
-        .control-group {
+        .group {
             display: flex;
             gap: 15px;
         }
 
-        /* Unlock Code Style */
+        /* Ammo Indicator inside Canvas via JS, but we can add HTML legend if needed. 
+           Sticking to internal drawing for simplicity as per request to keep single-file clean
+           or using overlay for clarity. Let's use drawing. */
+
         .unlock-code {
-            background: #222;
-            border: 2px dashed #f1c40f;
-            color: #f1c40f;
-            padding: 15px;
-            font-size: 28px;
-            letter-spacing: 3px;
-            margin: 20px 0;
             font-family: monospace;
-            font-weight: bold;
+            font-size: 32px;
+            color: #f1c40f;
+            border: 2px dashed #f1c40f;
+            padding: 10px;
+            background: #222;
+            margin: 20px 0;
+            letter-spacing: 2px;
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 
 <body>
 
-    <h2>Space Invader - Maths Edition</h2>
-
-    <div id="game-container">
-        <!-- Canvas fixed internal resolution -->
+    <div id="game-wrapper">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-        <!-- UI Bar under canvas -->
-        <div id="ui">
-            <div id="ui-1" class="ammo-type">1. Scherp</div>
-            <div id="ui-2" class="ammo-type">2. Stomp</div>
-            <div id="ui-3" class="ammo-type">3. Recht</div>
-            <div id="ui-4" class="ammo-type">4. Gestrekt</div>
-        </div>
-
-        <!-- Touch Controls -->
-        <div id="touch-controls" style="display:none;">
-            <div class="control-group">
+        <!-- TOUCH CONTROLS -->
+        <div id="touch-controls">
+            <div class="group">
                 <div class="t-btn" id="btn-left">⬅️</div>
                 <div class="t-btn" id="btn-right">➡️</div>
             </div>
-            <div class="control-group">
-                <div class="t-btn" id="switch-btn">🔄</div>
-                <div class="t-btn" id="shoot-btn">🔥</div>
+            <div class="group">
+                <div class="t-btn" id="btn-switch">🔄</div>
+                <div class="t-btn" id="btn-shoot">🔥</div>
             </div>
         </div>
 
-        <!-- SCREENS -->
-        <div id="landing-screen" class="overlay-screen">
-            <h1 style="color: #4ecca3;">Welkom</h1>
-            <p>Kies een codenaam:</p>
-            <input type="text" id="player-name-input" placeholder="Bijv. Player_123">
-            <button class="mode-btn" onclick="setPlayerName()">Start Missie</button>
+        <!-- 1. LOGIN SCREEN -->
+        <div id="screen-login" class="overlay">
+            <h1>Identificatie</h1>
+            <p>Voer je codenaam in:</p>
+            <input type="text" id="inp-name" placeholder="Agent X...">
+            <button onclick="submitName()">Start Missie</button>
         </div>
 
-        <div id="main-menu" class="overlay-screen" style="display:none;">
-            <h1>Missie Controle</h1>
-            <p>Welkom, <span id="display-name" style="color:#4ecca3"></span></p>
-            <p>Doel: <span style="color:#f1c40f">150 Punten</span></p>
-
-            <button class="mode-btn" onclick="startGame()">▶️ Start Spel</button>
-            <p style="font-size: 12px; color: #888; margin-top:20px;">Use Chrome/Safari for best experience</p>
+        <!-- 2. GAME OVER SCREEN -->
+        <div id="screen-gameover" class="overlay hidden" style="border-color: #ff4757;">
+            <h1 style="color: #ff4757;">MISSIE MISLUKT</h1>
+            <p>Score: <span id="score-loss">0</span></p>
+            <button onclick="location.reload()">Opnieuw Proberen</button>
         </div>
 
-        <div id="game-over" class="overlay-screen" style="display:none; border-color: #ff4757;">
-            <h1 style="color: #ff4757;">GAME OVER</h1>
-            <p>Je score: <span id="final-score">0</span></p>
-            <button class="mode-btn" onclick="showMenu()">Terug naar Menu</button>
-            <button class="mode-btn" onclick="startGame()">Probeer Opnieuw</button>
-        </div>
-
-        <div id="win-screen" class="overlay-screen" style="display:none; border-color: #f1c40f;">
-            <h1 style="color: #f1c40f;">MISSIE GESLAAGD!</h1>
-            <p>Je hebt de score van 150 bereikt!</p>
-
-            <p>Dit is je unlock code:</p>
+        <!-- 3. WIN SCREEN -->
+        <div id="screen-win" class="overlay hidden" style="border-color: #f1c40f;">
+            <h1 style="color: #f1c40f;">DOEL BEREIKT!</h1>
+            <p>Je hebt 150 punten behaald.</p>
+            <p>UNLOCK CODE:</p>
             <div class="unlock-code">ZUMA22</div>
-
-            <p style="font-size:12px; color:#aaa;">Bewaar deze code goed.</p>
-            <button class="mode-btn" onclick="location.reload()">Spel Afsluiten</button>
+            <p style="font-size: 12px; color: #888;">Maak een screenshot of noteer de code.</p>
         </div>
     </div>
 
     <script>
-        /* --- CONFIG --- */
-        const TARGET_SCORE = 150;
+        /* ---------------- CONSTANTS ---------------- */
         const LOG_URL = "https://script.google.com/macros/s/AKfycbytukuFv4uakCSohLYXZa-44gzMv_0jWAAQoBfLXHaMTN_TsRYK0lcVaeKhkXtbdek7XA/exec";
+        const TARGET_SCORE = 150;
+        const SPAWN_INTERVAL = 2000; // ms
 
-        /* --- STATE --- */
-        let playerName = localStorage.getItem('geoDefenderPlayerName') || "";
-        let animationId = null; // To store requestAnimationFrame ID
-        let lastTime = 0;
-
-        /* --- ELEMENTS --- */
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const uiDiv = document.getElementById('ui');
-        const touchDiv = document.getElementById('touch-controls');
-
-        /* --- GAME VARIABLES --- */
+        /* ---------------- STATE ---------------- */
+        let playerName = "";
         let score = 0;
-        let lives = 4;
-        let isRunning = false;
-        let difficulty = 0;
+        let lives = 3; // UPDATED per requirement
+        let gameRunning = false;
+        let lastTime = 0;
+        let spawnTimer = 0;
 
-        let player = { x: 380, y: 540, width: 40, height: 40, color: '#fff', typeIdx: 0 }; // typeIdx 0=Sharp, 1=Obtuse
-
-        // Define Weapon/Enemy Types
-        const TYPES = [
-            { label: 'Scherp', color: '#2ecc71', min: 15, max: 85 },   // 0
-            { label: 'Stomp', color: '#e67e22', min: 95, max: 175 }    // 1
-        ];
-
+        // Entities
+        let player = { x: 375, y: 530, w: 50, h: 50, color: '#fff', type: 0 };
         let bullets = [];
         let enemies = [];
-        let particles = [];
         let stars = [];
 
-        // Pre-gen stars
-        for (let i = 0; i < 60; i++) {
+        // Types: 0=Sharp, 1=Obtuse
+        const TYPES = [
+            { label: "SCHERP (<90)", color: "#2ecc71", min: 15, max: 85 },
+            { label: "STOMP (>90)", color: "#e67e22", min: 95, max: 175 }
+        ];
+
+        /* ---------------- SETUP ---------------- */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Init Stars
+        for (let i = 0; i < 80; i++) {
             stars.push({
                 x: Math.random() * 800,
                 y: Math.random() * 600,
                 size: Math.random() * 2,
-                speed: Math.random() * 2 + 0.5
+                speed: Math.random() * 1.5 + 0.5
             });
         }
 
-        /* --- CONTROLS STATE --- */
-        const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
-        let touchLeft = false, touchRight = false;
+        /* ---------------- INPUTS ---------------- */
+        const keys = { Left: false, Right: false };
 
-        // Keyboard
         window.addEventListener('keydown', e => {
-            if (e.code === 'ArrowLeft') keys.ArrowLeft = true;
-            if (e.code === 'ArrowRight') keys.ArrowRight = true;
-            if (e.code === 'Space') {
-                if (!keys.Space && isRunning) fireBullet();
-                keys.Space = true;
-            }
-            if ((e.key === '1' || e.key === '2') && isRunning) setWeapon(parseInt(e.key) - 1);
-            if (e.key === 'Shift' && isRunning) switchWeapon();
+            if (e.code === 'ArrowLeft') keys.Left = true;
+            if (e.code === 'ArrowRight') keys.Right = true;
+            if (e.code === 'Space' && gameRunning) fireBullet();
+            if ((e.key === '1' || e.key === '2') && gameRunning) setAmmo(parseInt(e.key) - 1);
+            if (e.code === 'ShiftLeft' && gameRunning) switchAmmo();
         });
+
         window.addEventListener('keyup', e => {
-            if (e.code === 'ArrowLeft') keys.ArrowLeft = false;
-            if (e.code === 'ArrowRight') keys.ArrowRight = false;
-            if (e.code === 'Space') keys.Space = false;
+            if (e.code === 'ArrowLeft') keys.Left = false;
+            if (e.code === 'ArrowRight') keys.Right = false;
         });
 
-        // Touch
-        function setupTouch(id, startFn, endFn) {
+        // Touch Handling (Prevent Default to stop scrolling)
+        function bindTouch(id, startFn, endFn) {
             const el = document.getElementById(id);
-            if (!el) return;
-            el.addEventListener('touchstart', e => { e.preventDefault(); startFn(); });
-            el.addEventListener('touchend', e => { e.preventDefault(); endFn(); });
-            el.addEventListener('mousedown', e => { e.preventDefault(); startFn(); });
-            el.addEventListener('mouseup', e => { e.preventDefault(); endFn(); });
-        }
-        setupTouch('btn-left', () => touchLeft = true, () => touchLeft = false);
-        setupTouch('btn-right', () => touchRight = true, () => touchRight = false);
-        setupTouch('shoot-btn', () => { if (isRunning) fireBullet(); }, () => { });
-        setupTouch('switch-btn', () => { if (isRunning) switchWeapon(); }, () => { });
-
-        /* --- UI LOGIC --- */
-        // Random Name if empty
-        if (!playerName) {
-            document.getElementById('player-name-input').value = "Player_" + Math.floor(Math.random() * 9999);
-        } else {
-            document.getElementById('player-name-input').value = playerName;
+            const handleStart = (e) => { e.preventDefault(); startFn(); };
+            const handleEnd = (e) => { e.preventDefault(); endFn(); };
+            el.addEventListener('mousedown', handleStart);
+            el.addEventListener('mouseup', handleEnd);
+            el.addEventListener('touchstart', handleStart);
+            el.addEventListener('touchend', handleEnd);
         }
 
-        function setPlayerName() {
-            let val = document.getElementById('player-name-input').value.trim();
-            if (!val) val = "Unknown";
-            playerName = val;
-            localStorage.setItem('geoDefenderPlayerName', playerName);
-            document.getElementById('display-name').innerText = playerName;
+        bindTouch('btn-left', () => keys.Left = true, () => keys.Left = false);
+        bindTouch('btn-right', () => keys.Right = true, () => keys.Right = false);
+        bindTouch('btn-shoot', () => fireBullet(), () => { });
+        bindTouch('btn-switch', () => switchAmmo(), () => { });
 
-            document.getElementById('landing-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'block';
+        /* ---------------- LOGIC ---------------- */
+        function submitName() {
+            const inp = document.getElementById('inp-name');
+            if (inp.value.trim().length > 0) {
+                playerName = inp.value.trim();
+                document.getElementById('screen-login').classList.add('hidden');
+                startGame();
+            } else {
+                alert("Vul een naam in!");
+            }
         }
-
-        function showMenu() {
-            stopGameLoop();
-            hideAllScreens();
-            document.getElementById('main-menu').style.display = 'block';
-            canvas.style.display = 'none';
-            uiDiv.style.display = 'none';
-            touchDiv.style.display = 'none';
-        }
-
-        function hideAllScreens() {
-            const screens = document.querySelectorAll('.overlay-screen');
-            screens.forEach(s => s.style.display = 'none');
-        }
-
-        /* --- GAME LOGIC --- */
 
         function startGame() {
-            stopGameLoop(); // Critical: Ensure no double loops
-            hideAllScreens();
-
-            // Re-init State
             score = 0;
-            lives = 4;
-            difficulty = 0;
-            isRunning = true;
-
-            player.x = 380;
-            player.typeIdx = 0; // Start with Sharp
-
+            lives = 3;
+            player.x = 375;
             bullets = [];
             enemies = [];
-            particles = [];
-
-            // Show Game UI
-            canvas.style.display = 'block';
-            uiDiv.style.display = 'flex';
-            touchDiv.style.display = 'flex';
-            updateWeaponUI();
-
-            // Start Loop
+            gameRunning = true;
             lastTime = performance.now();
-            animate(lastTime);
-        }
-
-        function stopGameLoop() {
-            isRunning = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-            }
-        }
-
-        function switchWeapon() {
-            player.typeIdx = (player.typeIdx + 1) % TYPES.length;
-            updateWeaponUI();
-        }
-        function setWeapon(idx) {
-            if (idx >= 0 && idx < TYPES.length) {
-                player.typeIdx = idx;
-                updateWeaponUI();
-            }
-        }
-        function updateWeaponUI() {
-            document.querySelectorAll('.ammo-type').forEach((el, i) => {
-                if (i === player.typeIdx) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-            // Hide unused slots 3 & 4 for now since we only have 2 types in this fix
-            document.getElementById('ui-3').style.display = 'none';
-            document.getElementById('ui-4').style.display = 'none';
+            requestAnimationFrame(gameLoop);
         }
 
         function fireBullet() {
             bullets.push({
-                x: player.x + 20,
+                x: player.x + 25,
                 y: player.y,
-                typeIdx: player.typeIdx,
-                color: TYPES[player.typeIdx].color
+                type: player.type,
+                color: TYPES[player.type].color
             });
-            // Simple sound
             playSound(400, 'square');
         }
 
-        /* --- MAIN LOOP --- */
-        function animate(time) {
-            if (!isRunning) return;
+        function switchAmmo() {
+            player.type = (player.type + 1) % 2;
+        }
 
-            // Delta time calc could go here, but fixed step is fine for this simple game
-            animationId = requestAnimationFrame(animate);
+        function setAmmo(idx) {
+            if (idx >= 0 && idx < 2) player.type = idx;
+        }
 
-            // Difficulty: increases with score
-            difficulty = Math.min(2, score / 100);
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
 
-            // Clear
-            ctx.fillStyle = "#111";
-            ctx.fillRect(0, 0, 800, 600);
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
 
-            // Draw Stars
-            ctx.fillStyle = "white";
-            stars.forEach(s => {
-                s.y += s.speed;
-                if (s.y > 600) { s.y = 0; s.x = Math.random() * 800; }
-                ctx.globalAlpha = 0.5;
-                ctx.fillRect(s.x, s.y, s.size, s.size);
-                ctx.globalAlpha = 1;
-            });
+            update(dt);
+            draw();
 
-            // Player Logic
-            if (keys.ArrowLeft || touchLeft) player.x -= 6;
-            if (keys.ArrowRight || touchRight) player.x += 6;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            // Player Move
+            if (keys.Left) player.x -= 0.4 * dt; // speed based on time
+            if (keys.Right) player.x += 0.4 * dt;
             if (player.x < 0) player.x = 0;
-            if (player.x > 760) player.x = 760;
-
-            // Draw Player
-            ctx.fillStyle = TYPES[player.typeIdx].color;
-            ctx.beginPath();
-            ctx.moveTo(player.x + 20, player.y);
-            ctx.lineTo(player.x + 40, player.y + 40);
-            ctx.lineTo(player.x + 20, player.y + 30);
-            ctx.lineTo(player.x, player.y + 40);
-            ctx.fill();
+            if (player.x > 750) player.x = 750;
 
             // Bullets
             for (let i = 0; i < bullets.length; i++) {
-                let b = bullets[i];
-                b.y -= 8;
-                ctx.fillStyle = b.color;
-                ctx.fillRect(b.x - 3, b.y, 6, 12);
-                if (b.y < -20) { bullets.splice(i, 1); i--; }
+                bullets[i].y -= 0.6 * dt;
+                if (bullets[i].y < -20) { bullets.splice(i, 1); i--; }
             }
 
-            // Enemies Spawning
-            let spawnChance = 0.02 + (difficulty * 0.01);
-            if (Math.random() < spawnChance) {
+            // Spawn Enemy (2000ms interval)
+            spawnTimer += dt;
+            if (spawnTimer > SPAWN_INTERVAL) {
                 spawnEnemy();
+                spawnTimer = 0;
             }
 
-            // Enemies Update
+            // Enemies
             for (let i = 0; i < enemies.length; i++) {
                 let e = enemies[i];
-                e.y += e.speed;
+                // Speed formula: Base 0.5 + small difficulty ramp
+                let speed = 0.5 + (score / 500); // Slower falling
+                e.y += speed * (dt / 16); // normalize roughly to 60fps
 
-                // Draw Logic
-                drawEnemy(e);
-
-                // Collision Bullet
-                for (let j = 0; j < bullets.length; j++) {
-                    let b = bullets[j];
-                    // Simple AABB
-                    if (b.x > e.x && b.x < e.x + e.size && b.y > e.y && b.y < e.y + e.size) {
-                        if (b.typeIdx === e.typeIdx) {
-                            // CORRECT
+                // Collision with Player Bullet
+                let hit = false;
+                for (let b = 0; b < bullets.length; b++) {
+                    let bull = bullets[b];
+                    // Simple Box Collision
+                    if (bull.x > e.x && bull.x < e.x + 50 && bull.y > e.y && bull.y < e.y + 50) {
+                        if (bull.type === e.type) {
+                            // Correct Hit
                             score += 10;
                             playSound(600, 'sine');
-                            createParticles(e.x + 25, e.y + 25, TYPES[e.typeIdx].color);
-                            enemies.splice(i, 1); bullets.splice(j, 1);
-                            i--; j--;
+                            enemies.splice(i, 1); i--;
+                            bullets.splice(b, 1); b--;
+                            hit = true;
 
-                            // CHECK WIN HERE
-                            if (score >= TARGET_SCORE) {
-                                handleWin();
-                                return;
-                            }
-
+                            // WIN CHECK
+                            if (score >= TARGET_SCORE) doWin();
                         } else {
-                            // WRONG AMMO
+                            // Wrong Type
                             score -= 5;
                             if (score < 0) score = 0;
-                            bullets.splice(j, 1); j--;
                             playSound(150, 'sawtooth');
+                            bullets.splice(b, 1); b--;
+                            hit = true; // Bullet destroyed
                         }
-                        break; // break bullet loop
+                        break;
                     }
                 }
 
-                // Collision Floor
-                if (i >= 0 && enemies[i] && enemies[i].y > 600) {
-                    enemies.splice(i, 1); i--;
+                if (hit) continue;
+
+                // Floor Hit
+                if (e.y > 600) {
                     lives--;
                     playSound(100, 'sawtooth');
-                    if (lives <= 0) {
-                        handleGameOver();
-                        return;
-                    }
+                    enemies.splice(i, 1); i--;
+                    if (lives <= 0) doGameOver();
                 }
             }
 
-            // Particles
-            for (let i = 0; i < particles.length; i++) {
-                let p = particles[i];
-                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
-                if (p.life <= 0) { particles.splice(i, 1); i--; continue; }
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 6.28); ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-
-            // HUD Drawing (Fixed y=40)
-            ctx.font = "bold 24px Segoe UI";
-            ctx.textAlign = "left";
-            ctx.fillStyle = "white";
-            ctx.fillText(`Score: ${score} / ${TARGET_SCORE}`, 20, 40);
-
-            ctx.textAlign = "right";
-            let hearts = "";
-            for (let k = 0; k < lives; k++) hearts += "❤️";
-            ctx.fillText(hearts, 780, 40);
-        }
-
-        function spawnEnemy() {
-            let typeIdx = Math.random() < 0.5 ? 0 : 1;
-            let type = TYPES[typeIdx];
-            let angle = Math.floor(Math.random() * (type.max - type.min) + type.min);
-
-            enemies.push({
-                x: Math.random() * 740 + 10,
-                y: -60,
-                size: 50,
-                speed: 1.5 + difficulty,
-                typeIdx: typeIdx,
-                angle: angle
+            // Stars
+            stars.forEach(s => {
+                s.y += s.speed * (dt / 16);
+                if (s.y > 600) { s.y = 0; s.x = Math.random() * 800; }
             });
         }
 
-        function drawEnemy(e) {
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 3;
-            // Draw Base angle (simplified visualisation)
+        function spawnEnemy() {
+            const typeIdx = Math.random() < 0.5 ? 0 : 1;
+            const type = TYPES[typeIdx];
+            const angle = Math.floor(Math.random() * (type.max - type.min) + type.min);
+
+            enemies.push({
+                x: Math.random() * 750,
+                y: -50,
+                type: typeIdx,
+                angle: angle,
+                color: type.color
+            });
+        }
+
+        /* ---------------- DRAWING ---------------- */
+        function draw() {
+            // BG
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, 800, 600);
+
+            // Stars
+            ctx.fillStyle = "white";
+            stars.forEach(s => {
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            });
+            ctx.globalAlpha = 1;
+
+            // Player
+            ctx.fillStyle = TYPES[player.type].color;
+            // Ship shape
             ctx.beginPath();
+            ctx.moveTo(player.x + 25, player.y);
+            ctx.lineTo(player.x + 50, player.y + 50);
+            ctx.lineTo(player.x + 25, player.y + 40);
+            ctx.lineTo(player.x, player.y + 50);
+            ctx.fill();
 
-            // Base line horizontal
-            ctx.moveTo(e.x + 50, e.y + 50);
-            ctx.lineTo(e.x, e.y + 50);
+            // Bullets
+            bullets.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x - 3, b.y, 6, 12);
+            });
 
-            // Angle line
-            let rad = (e.angle * Math.PI) / 180;
-            // X = cos(a), Y = -sin(a) (because Y up is negative in standard math, but here 0 is top)
-            // Actually standard HTML canvas y grows down. So 0 degrees is usually Right (1,0).
-            // We want angle opening from right-to-left.
-            // Let's keep it simple: Draw line from (x, y+50) to computed point
-            let x2 = e.x + Math.cos(rad) * 50;
-            let y2 = (e.y + 50) - Math.sin(rad) * 50;
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
+            // Enemies
+            enemies.forEach(e => {
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 3;
+                const x = e.x;
+                const y = e.y;
 
-            // Arc
-            ctx.beginPath();
-            ctx.arc(e.x, e.y + 50, 15, 0, -rad, true);
-            ctx.stroke();
+                // Draw Angle Visuals
+                ctx.beginPath();
+                ctx.moveTo(x + 50, y + 50); // Base Right
+                ctx.lineTo(x, y + 50);      // Corner
 
-            // Text (Angle value optional, maybe too easy? disable for now)
-            // ctx.fillStyle = "#aaa"; ctx.textAlign="center"; ctx.fillText(e.angle+"°", e.x+25, e.y);
+                const rad = (e.angle * Math.PI) / 180;
+                const x2 = x + Math.cos(rad) * 50;
+                const y2 = (y + 50) - Math.sin(rad) * 50;
+
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Arc
+                ctx.beginPath();
+                ctx.arc(x, y + 50, 15, 0, -rad, true);
+                ctx.stroke();
+
+                // Color indicator dot
+                ctx.fillStyle = e.color;
+                ctx.beginPath();
+                ctx.arc(x + 25, y + 25, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // HUD UI (Safe Margins y > 40)
+            drawUI();
         }
 
-        function createParticles(x, y, color) {
-            for (let i = 0; i < 10; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    life: 1.0,
-                    color: color
-                });
-            }
+        function drawUI() {
+            ctx.fillStyle = "white";
+            ctx.font = "bold 20px Segoe UI";
+            ctx.textAlign = "left";
+
+            // Score
+            ctx.fillText(`SCORE: ${score} / ${TARGET_SCORE}`, 20, 50);
+
+            // Lives
+            ctx.textAlign = "right";
+            let heartStr = "❤️".repeat(lives);
+            ctx.fillText(`LEVENS: ${heartStr}`, 780, 50);
+
+            // Ammo Indicator (Center)
+            ctx.textAlign = "center";
+            ctx.font = "16px Segoe UI";
+            const cur = TYPES[player.type];
+            ctx.fillStyle = cur.color;
+            ctx.fillText(`WAPEN: ${cur.label}`, 400, 50);
         }
 
-        /* --- GAME END HANDLERS --- */
-
-        function handleWin() {
-            stopGameLoop(); // FREEZE
-            playSound(500, 'sine'); // Victory beep
-
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('win-screen').style.display = 'block';
-
+        /* ---------------- END GAME ---------------- */
+        function doWin() {
+            gameRunning = false;
             logData(score);
+            document.getElementById('screen-win').classList.remove('hidden');
         }
 
-        function handleGameOver() {
-            stopGameLoop();
-            playSound(100, 'sawtooth');
-
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over').style.display = 'block';
-
+        function doGameOver() {
+            gameRunning = false;
             logData(score);
+            document.getElementById('score-loss').innerText = score;
+            document.getElementById('screen-gameover').classList.remove('hidden');
         }
 
         function logData(finalScore) {
-            // FIRE AND FORGET
-            console.log("Logging...");
+            // ?action=submit&code=[PLAYER_PSEUDONYM]&quizId=Game1_Space&score=[FINAL_SCORE]&total=150
             const url = `${LOG_URL}?action=submit&code=${encodeURIComponent(playerName)}&quizId=Game1_Space&score=${finalScore}&total=${TARGET_SCORE}`;
-            fetch(url, { mode: 'no-cors' }).then(() => console.log("Sent")).catch(e => console.log(e));
+            console.log("Logging to:", url);
+            fetch(url, { mode: 'no-cors' }).catch(e => console.error(e));
         }
 
-        /* --- AUDIO UTIL --- */
+        /* ---------------- AUDIO ---------------- */
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type) {
-            try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.2);
-            } catch (e) { }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
         }
-
     </script>
+
 </body>
 
 </html>
