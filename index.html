@@ -16,79 +16,41 @@
             flex-direction: column;
             align-items: center;
             user-select: none;
-            touch-action: none; /* Prevent browser zooming/scrolling */
+            touch-action: none;
         }
 
         h2 {
-            margin: 10px 0;
+            margin: 5px 0;
             text-shadow: 0 0 10px #4ecca3;
             z-index: 10;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
+            /* Smaller for mobile */
         }
 
         #game-container {
             position: relative;
             width: 100%;
             max-width: 800px;
+            /* Force max width */
             display: flex;
             justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
         #gameCanvas {
-            background: transparent;
-            border: 4px solid #4ecca3;
-            box-shadow: 0 0 30px rgba(78, 204, 163, 0.3);
+            background: #111;
+            border: 2px solid #4ecca3;
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.2);
             border-radius: 4px;
             display: none;
+            /* Hidden until game starts */
+
+            /* Responsive Magic */
             width: 100%;
             height: auto;
-            max-height: 70vh; /* Leave room for controls */
             aspect-ratio: 4/3;
-        }
-
-        #ui {
-            margin-top: 5px;
-            display: none;
-            gap: 10px;
-            font-size: 14px;
-            align-items: center;
-            z-index: 10;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .ammo-type {
-            padding: 5px 10px;
-            border-radius: 5px;
-            border: 2px solid #555;
-            background: rgba(0, 0, 0, 0.5);
-            opacity: 0.5;
-            transition: all 0.1s;
-            position: relative;
-            min-width: 60px;
-            text-align: center;
-            font-size: 12px;
-        }
-
-        .active {
-            opacity: 1;
-            font-weight: bold;
-            border-color: white;
-            transform: scale(1.1);
-            box-shadow: 0 0 15px currentColor;
-            z-index: 10;
-        }
-
-        #lives {
-            color: #ff4757;
-            font-weight: bold;
-            text-shadow: 0 0 5px red;
-        }
-
-        #target-score {
-            color: #f1c40f;
-            font-weight: bold;
         }
 
         .overlay-screen {
@@ -98,55 +60,31 @@
             transform: translate(-50%, -50%);
             background: rgba(10, 10, 20, 0.95);
             padding: 20px;
-            border: 4px solid #4ecca3;
-            border-radius: 15px;
+            border: 2px solid #4ecca3;
+            border-radius: 10px;
             text-align: center;
             box-shadow: 0 0 50px rgba(78, 204, 163, 0.3);
             z-index: 100;
-            width: 90%;
+            width: 85%;
             max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
         }
 
         .mode-btn {
             display: block;
             width: 100%;
             margin: 10px 0;
-            padding: 15px;
-            font-size: 18px;
+            padding: 12px;
+            font-size: 16px;
             background: #1a1a2e;
             color: #4ecca3;
-            border: 2px solid #4ecca3;
+            border: 1px solid #4ecca3;
             cursor: pointer;
-            transition: 0.2s;
-            border-radius: 8px;
-            position: relative;
+            border-radius: 6px;
         }
 
-        .mode-btn:active, .mode-btn:hover {
+        .mode-btn:active {
             background: #4ecca3;
             color: #000;
-            transform: scale(1.02);
-        }
-
-        .mode-btn.math {
-            border-color: #9b59b6;
-            color: #9b59b6;
-        }
-
-        .mode-btn.locked {
-            background: #222;
-            color: #555;
-            border-color: #555;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        h1 {
-            margin-top: 0;
-            color: #4ecca3;
-            font-size: 1.8rem;
         }
 
         /* Input styling */
@@ -161,9 +99,37 @@
             text-align: center;
         }
 
+        /* UI HUD (Ammo) */
+        #ui {
+            margin-top: 5px;
+            display: none;
+            /* Flex when playing */
+            gap: 5px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .ammo-type {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0.5;
+            font-size: 12px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .ammo-type.active {
+            opacity: 1;
+            border-color: white;
+            background: rgba(78, 204, 163, 0.2);
+        }
+
         /* Touch Controls */
         #touch-controls {
-            display: none; /* Shown via JS detection or media query */
+            display: flex;
+            /* Always flex, let user decide usage */
             width: 100%;
             max-width: 800px;
             margin-top: 10px;
@@ -174,12 +140,11 @@
         }
 
         .t-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 20px;
+            border-radius: 8px;
+            font-size: 24px;
             user-select: none;
             touch-action: manipulation;
             width: 60px;
@@ -190,32 +155,12 @@
         }
 
         .t-btn:active {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
         }
 
         .control-group {
             display: flex;
-            gap: 10px;
-        }
-
-        #shoot-btn {
-            background: rgba(255, 71, 87, 0.2);
-            border-color: #ff4757;
-            width: 80px;
-        }
-
-        #switch-btn {
-            background: rgba(78, 204, 163, 0.2);
-            border-color: #4ecca3;
-            font-size: 14px;
-        }
-
-        @media (hover: none) and (pointer: coarse) {
-            #touch-controls {
-                display: flex;
-            }
-            body { font-size: 14px; }
-            h2 { font-size: 1.2rem; }
+            gap: 15px;
         }
 
         /* Unlock Code Style */
@@ -224,18 +169,11 @@
             border: 2px dashed #f1c40f;
             color: #f1c40f;
             padding: 15px;
-            font-size: 24px;
-            letter-spacing: 2px;
+            font-size: 28px;
+            letter-spacing: 3px;
             margin: 20px 0;
             font-family: monospace;
             font-weight: bold;
-            display: none; /* Hidden by default */
-        }
-
-        #unlock-message {
-            display: none;
-            margin-top: 10px; 
-            color: #ccc;
         }
     </style>
 </head>
@@ -245,693 +183,479 @@
     <h2>Space Invader - Maths Edition</h2>
 
     <div id="game-container">
+        <!-- Canvas fixed internal resolution -->
         <canvas id="gameCanvas" width="800" height="600"></canvas>
 
+        <!-- UI Bar under canvas -->
+        <div id="ui">
+            <div id="ui-1" class="ammo-type">1. Scherp</div>
+            <div id="ui-2" class="ammo-type">2. Stomp</div>
+            <div id="ui-3" class="ammo-type">3. Recht</div>
+            <div id="ui-4" class="ammo-type">4. Gestrekt</div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="touch-controls" style="display:none;">
+            <div class="control-group">
+                <div class="t-btn" id="btn-left">⬅️</div>
+                <div class="t-btn" id="btn-right">➡️</div>
+            </div>
+            <div class="control-group">
+                <div class="t-btn" id="switch-btn">🔄</div>
+                <div class="t-btn" id="shoot-btn">🔥</div>
+            </div>
+        </div>
+
+        <!-- SCREENS -->
         <div id="landing-screen" class="overlay-screen">
             <h1 style="color: #4ecca3;">Welkom</h1>
             <p>Kies een codenaam:</p>
             <input type="text" id="player-name-input" placeholder="Bijv. Player_123">
             <button class="mode-btn" onclick="setPlayerName()">Start Missie</button>
-            <p style="font-size: 12px; color: #888;">(Geen echte naam gebruiken!)</p>
         </div>
 
         <div id="main-menu" class="overlay-screen" style="display:none;">
-            <h1>Kies Missie</h1>
+            <h1>Missie Controle</h1>
             <p>Welkom, <span id="display-name" style="color:#4ecca3"></span></p>
-            <p>Haal <span style="color:#f1c40f">150 punten</span> om de code te kraken!</p>
+            <p>Doel: <span style="color:#f1c40f">150 Punten</span></p>
 
-            <button id="btn-lvl1" class="mode-btn" onclick="startFlow('level1')">
-                1. De Aanval (Scherp/Stomp) <span id="hs-1" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
-            </button>
-
-            <button id="btn-lvl2" class="mode-btn locked" onclick="startFlow('level2')">
-                🔒 2. Versterking (Alle Hoeken) <span id="hs-2" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
-            </button>
-
-            <button id="btn-lvl3" class="mode-btn locked" onclick="startFlow('level3')">
-                🔒 3. Driehoeken <span id="hs-3" style="font-size:0.8em; color: #f1c40f; float:right;"></span>
-            </button>
-
-            <div class="reset-link" onclick="resetProgress()" style="color:#555; font-size:12px; text-decoration:underline; cursor:pointer; margin-top:20px;">[Reset Progressie]</div>
+            <button class="mode-btn" onclick="startGame()">▶️ Start Spel</button>
+            <p style="font-size: 12px; color: #888; margin-top:20px;">Use Chrome/Safari for best experience</p>
         </div>
 
         <div id="game-over" class="overlay-screen" style="display:none; border-color: #ff4757;">
             <h1 style="color: #ff4757;">GAME OVER</h1>
-            <p>Score: <span id="final-score">0</span></p>
-            <button class="mode-btn restart-btn" onclick="returnToMenu()">Terug naar Menu</button>
-            <button class="mode-btn" onclick="restartGame()">Probeer Opnieuw</button>
+            <p>Je score: <span id="final-score">0</span></p>
+            <button class="mode-btn" onclick="showMenu()">Terug naar Menu</button>
+            <button class="mode-btn" onclick="startGame()">Probeer Opnieuw</button>
         </div>
 
-        <div id="level-complete" class="overlay-screen" style="display:none; border-color: #f1c40f;">
-            <h1 style="color: #f1c40f;">MISSIE VOLTOOID!</h1>
-            <p>Score: <span id="win-score">0</span> / 150</p>
-            
-            <div id="unlock-container">
-                <p id="unlock-message">Je hebt de geheime code ontgrendeld:</p>
-                <div id="unlock-code-display" class="unlock-code">ZUMA22</div>
-            </div>
+        <div id="win-screen" class="overlay-screen" style="display:none; border-color: #f1c40f;">
+            <h1 style="color: #f1c40f;">MISSIE GESLAAGD!</h1>
+            <p>Je hebt de score van 150 bereikt!</p>
 
-            <button class="mode-btn next-btn" onclick="returnToMenu()">Terug naar Menu</button>
-            <button class="mode-btn continue-btn" style="background:#3498db" onclick="continuePlaying()">Doorspelen (Endless) 🚀</button>
-        </div>
+            <p>Dit is je unlock code:</p>
+            <div class="unlock-code">ZUMA22</div>
 
-        <div id="instruction-screen" class="overlay-screen" style="display:none; max-width:700px;">
-            <h1 id="briefing-title" style="color: #4ecca3;">Uitleg</h1>
-            <div id="briefing-content" style="display:flex; justify-content:space-around; margin: 20px 0; text-align:left; gap: 10px; flex-wrap:wrap;">
-                <!-- Content Injected -->
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="mode-btn" style="width: auto; padding: 10px 30px;" onclick="startGameFromBriefing()">Start Generaal!</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="ui">
-        <div>Score: <span id="score">0</span> / <span id="target-ui">150</span></div>
-        <div id="lives">Levens: ❤️❤️❤️❤️</div>
-        <div id="ui-1" class="ammo-type">1</div>
-        <div id="ui-2" class="ammo-type">2</div>
-        <div id="ui-3" class="ammo-type">3</div>
-        <div id="ui-4" class="ammo-type">4</div>
-    </div>
-
-    <div id="touch-controls">
-        <div class="control-group">
-            <div class="t-btn" id="btn-left">⬅️</div>
-            <div class="t-btn" id="btn-right">➡️</div>
-        </div>
-        <div class="control-group">
-            <div class="t-btn" id="switch-btn">🔄</div>
-            <div class="t-btn" id="shoot-btn">🔥</div>
+            <p style="font-size:12px; color:#aaa;">Bewaar deze code goed.</p>
+            <button class="mode-btn" onclick="location.reload()">Spel Afsluiten</button>
         </div>
     </div>
 
     <script>
-        /* --- CONFIGURATION --- */
-        const WIN_SCORE = 150;
-        const UNLOCK_CODE_TEXT = "ZUMA22";
-        const LOGGING_URL = "https://script.google.com/macros/s/AKfycbytukuFv4uakCSohLYXZa-44gzMv_0jWAAQoBfLXHaMTN_TsRYK0lcVaeKhkXtbdek7XA/exec";
-        
-        /* --- STATE --- */
-        let userProgress = parseInt(localStorage.getItem('geoDefenderProgress') || 1);
-        let highscores = JSON.parse(localStorage.getItem('geoDefenderHighscores')) || { 1: 0, 2: 0, 3: 0 };
-        let playerName = localStorage.getItem('geoDefenderPlayerName') || "";
+        /* --- CONFIG --- */
+        const TARGET_SCORE = 150;
+        const LOG_URL = "https://script.google.com/macros/s/AKfycbytukuFv4uakCSohLYXZa-44gzMv_0jWAAQoBfLXHaMTN_TsRYK0lcVaeKhkXtbdek7XA/exec";
 
-        /* --- GAME ENGINE VARIABLES --- */
+        /* --- STATE --- */
+        let playerName = localStorage.getItem('geoDefenderPlayerName') || "";
+        let animationId = null; // To store requestAnimationFrame ID
+        let lastTime = 0;
+
+        /* --- ELEMENTS --- */
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        const GAME_MODES = {
-            'level1': {
-                id: 1, name: 'Hoeken Aanval', speedMultiplier: 0.8,
-                types: {
-                    'type1': { label: 'Scherp', color: '#2ecc71', logic: 'angle', min: 15, max: 85 },
-                    'type2': { label: 'Stomp', color: '#e67e22', logic: 'angle', min: 95, max: 175 }
-                }
-            },
-            'level2': {
-                id: 2, name: 'Versterking', speedMultiplier: 1.0,
-                types: {
-                    'type1': { label: 'Scherp', color: '#2ecc71', logic: 'angle', min: 15, max: 85 },
-                    'type2': { label: 'Stomp', color: '#e67e22', logic: 'angle', min: 95, max: 175 },
-                    'type3': { label: 'Recht', color: '#3498db', logic: 'angle', min: 90, max: 90 },
-                    'type4': { label: 'Gestrekt', color: '#9b59b6', logic: 'angle', min: 180, max: 180 }
-                }
-            },
-            'level3': {
-                id: 3, name: 'Driehoeken', speedMultiplier: 1.0,
-                types: {
-                    'type1': { label: 'Gelijkzijdig', color: '#f1c40f', logic: 'triangle_eq' },
-                    'type2': { label: 'Gelijkbenig', color: '#e67e22', logic: 'triangle_iso' },
-                    'type3': { label: 'Rechthoekig', color: '#3498db', logic: 'triangle_right' },
-                    'type4': { label: 'Overige', color: '#ecf0f1', logic: 'triangle_random' }
-                }
-            }
-        };
+        const uiDiv = document.getElementById('ui');
+        const touchDiv = document.getElementById('touch-controls');
 
-        let currentModeKey = 'level1';
-        let currentMode = null;
-        let currentTypes = {};
+        /* --- GAME VARIABLES --- */
         let score = 0;
         let lives = 4;
-        let isGameOver = false;
-        let hasWon = false;
         let isRunning = false;
-        let gameFrame = 0;
-        let difficultyFactor = 0;
+        let difficulty = 0;
 
-        let player = { x: 400, y: 550, width: 40, height: 40, color: '#fff', type: 'type1' };
+        let player = { x: 380, y: 540, width: 40, height: 40, color: '#fff', typeIdx: 0 }; // typeIdx 0=Sharp, 1=Obtuse
+
+        // Define Weapon/Enemy Types
+        const TYPES = [
+            { label: 'Scherp', color: '#2ecc71', min: 15, max: 85 },   // 0
+            { label: 'Stomp', color: '#e67e22', min: 95, max: 175 }    // 1
+        ];
+
         let bullets = [];
         let enemies = [];
         let particles = [];
         let stars = [];
 
-        // Stars init
-        for (let i = 0; i < 80; i++) {
+        // Pre-gen stars
+        for (let i = 0; i < 60; i++) {
             stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2 + 0.5,
-                speed: Math.random() * 3 + 1
+                x: Math.random() * 800,
+                y: Math.random() * 600,
+                size: Math.random() * 2,
+                speed: Math.random() * 2 + 0.5
             });
         }
 
-        /* --- INPUT HANDLING --- */
-        const keys = {};
-        let touchLeft = false;
-        let touchRight = false;
-        let touchShoot = false;
+        /* --- CONTROLS STATE --- */
+        const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+        let touchLeft = false, touchRight = false;
 
+        // Keyboard
         window.addEventListener('keydown', e => {
-            if (isGameOver) return;
-            keys[e.code] = true;
-            if (e.key >= '1' && e.key <= '4') switchWeapon('type' + e.key);
-            if (e.code === 'Space') fireBullet();
+            if (e.code === 'ArrowLeft') keys.ArrowLeft = true;
+            if (e.code === 'ArrowRight') keys.ArrowRight = true;
+            if (e.code === 'Space') {
+                if (!keys.Space && isRunning) fireBullet();
+                keys.Space = true;
+            }
+            if ((e.key === '1' || e.key === '2') && isRunning) setWeapon(parseInt(e.key) - 1);
+            if (e.key === 'Shift' && isRunning) switchWeapon();
         });
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        window.addEventListener('keyup', e => {
+            if (e.code === 'ArrowLeft') keys.ArrowLeft = false;
+            if (e.code === 'ArrowRight') keys.ArrowRight = false;
+            if (e.code === 'Space') keys.Space = false;
+        });
 
-        // Touch Listeners
-        function addTouch(id, startHandler, endHandler) {
+        // Touch
+        function setupTouch(id, startFn, endFn) {
             const el = document.getElementById(id);
-            if(!el) return;
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); startHandler(); }, {passive: false});
-            el.addEventListener('touchend', (e) => { e.preventDefault(); endHandler(); }, {passive: false});
-            el.addEventListener('mousedown', (e) => { e.preventDefault(); startHandler(); }); // Mouse fallback for testing
-            el.addEventListener('mouseup', (e) => { e.preventDefault(); endHandler(); });
+            if (!el) return;
+            el.addEventListener('touchstart', e => { e.preventDefault(); startFn(); });
+            el.addEventListener('touchend', e => { e.preventDefault(); endFn(); });
+            el.addEventListener('mousedown', e => { e.preventDefault(); startFn(); });
+            el.addEventListener('mouseup', e => { e.preventDefault(); endFn(); });
+        }
+        setupTouch('btn-left', () => touchLeft = true, () => touchLeft = false);
+        setupTouch('btn-right', () => touchRight = true, () => touchRight = false);
+        setupTouch('shoot-btn', () => { if (isRunning) fireBullet(); }, () => { });
+        setupTouch('switch-btn', () => { if (isRunning) switchWeapon(); }, () => { });
+
+        /* --- UI LOGIC --- */
+        // Random Name if empty
+        if (!playerName) {
+            document.getElementById('player-name-input').value = "Player_" + Math.floor(Math.random() * 9999);
+        } else {
+            document.getElementById('player-name-input').value = playerName;
         }
 
-        addTouch('btn-left', () => touchLeft = true, () => touchLeft = false);
-        addTouch('btn-right', () => touchRight = true, () => touchRight = false);
-        addTouch('shoot-btn', () => fireBullet(), () => {});
-        addTouch('switch-btn', () => cycleWeapon(), () => {});
+        function setPlayerName() {
+            let val = document.getElementById('player-name-input').value.trim();
+            if (!val) val = "Unknown";
+            playerName = val;
+            localStorage.setItem('geoDefenderPlayerName', playerName);
+            document.getElementById('display-name').innerText = playerName;
+
+            document.getElementById('landing-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'block';
+        }
+
+        function showMenu() {
+            stopGameLoop();
+            hideAllScreens();
+            document.getElementById('main-menu').style.display = 'block';
+            canvas.style.display = 'none';
+            uiDiv.style.display = 'none';
+            touchDiv.style.display = 'none';
+        }
+
+        function hideAllScreens() {
+            const screens = document.querySelectorAll('.overlay-screen');
+            screens.forEach(s => s.style.display = 'none');
+        }
+
+        /* --- GAME LOGIC --- */
+
+        function startGame() {
+            stopGameLoop(); // Critical: Ensure no double loops
+            hideAllScreens();
+
+            // Re-init State
+            score = 0;
+            lives = 4;
+            difficulty = 0;
+            isRunning = true;
+
+            player.x = 380;
+            player.typeIdx = 0; // Start with Sharp
+
+            bullets = [];
+            enemies = [];
+            particles = [];
+
+            // Show Game UI
+            canvas.style.display = 'block';
+            uiDiv.style.display = 'flex';
+            touchDiv.style.display = 'flex';
+            updateWeaponUI();
+
+            // Start Loop
+            lastTime = performance.now();
+            animate(lastTime);
+        }
+
+        function stopGameLoop() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function switchWeapon() {
+            player.typeIdx = (player.typeIdx + 1) % TYPES.length;
+            updateWeaponUI();
+        }
+        function setWeapon(idx) {
+            if (idx >= 0 && idx < TYPES.length) {
+                player.typeIdx = idx;
+                updateWeaponUI();
+            }
+        }
+        function updateWeaponUI() {
+            document.querySelectorAll('.ammo-type').forEach((el, i) => {
+                if (i === player.typeIdx) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+            // Hide unused slots 3 & 4 for now since we only have 2 types in this fix
+            document.getElementById('ui-3').style.display = 'none';
+            document.getElementById('ui-4').style.display = 'none';
+        }
 
         function fireBullet() {
             bullets.push({
-                x: player.x + player.width / 2, y: player.y,
-                type: player.type,
-                color: currentTypes[player.type].color,
-                speed: 10
+                x: player.x + 20,
+                y: player.y,
+                typeIdx: player.typeIdx,
+                color: TYPES[player.typeIdx].color
             });
-            playSound('shoot');
+            // Simple sound
+            playSound(400, 'square');
         }
 
-        function cycleWeapon() {
-            let currentIdx = parseInt(player.type.replace('type', ''));
-            let totalTypes = Object.keys(currentTypes).length;
-            let nextIdx = (currentIdx % totalTypes) + 1;
-            switchWeapon('type' + nextIdx);
-        }
+        /* --- MAIN LOOP --- */
+        function animate(time) {
+            if (!isRunning) return;
 
-        function switchWeapon(typeKey) {
-            if (!currentTypes[typeKey]) return;
-            player.type = typeKey;
-            player.color = currentTypes[typeKey].color;
-            for (let i = 1; i <= 4; i++) {
-                const el = document.getElementById('ui-' + i);
-                if(el) {
-                    el.classList.remove('active');
-                    el.style.borderColor = "#555";
-                    if (('type' + i) === typeKey) {
-                        el.classList.add('active');
-                        el.style.borderColor = "white";
-                    }
-                }
-            }
-        }
+            // Delta time calc could go here, but fixed step is fine for this simple game
+            animationId = requestAnimationFrame(animate);
 
-        /* --- UI & FLOW --- */
-        // Init logic
-        if (playerName) {
-            document.getElementById('display-name').innerText = playerName;
-            document.getElementById('landing-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'block';
-            document.getElementById('player-name-input').value = playerName;
-        } else {
-            // Suggest random pseudonym
-            let randomId = Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('player-name-input').value = "Player_" + randomId;
-        }
-        updateMenu();
+            // Difficulty: increases with score
+            difficulty = Math.min(2, score / 100);
 
-        function setPlayerName() {
-            let input = document.getElementById('player-name-input').value.trim();
-            if (!input) input = "Player_" + Math.floor(1000 + Math.random() * 9000);
-            
-            playerName = input;
-            localStorage.setItem('geoDefenderPlayerName', playerName);
-            
-            document.getElementById('landing-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'block';
-            document.getElementById('display-name').innerText = playerName;
-        }
+            // Clear
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, 800, 600);
 
-        function startFlow(modeKey) {
-            currentModeKey = modeKey;
-            currentMode = GAME_MODES[modeKey];
-            
-            // Show Briefing first
-            showBriefing(modeKey);
-        }
-
-        function startGameFromBriefing() {
-            startGame(currentModeKey);
-        }
-
-        function showBriefing(modeKey) {
-            document.getElementById('main-menu').style.display = 'none';
-            const screen = document.getElementById('instruction-screen');
-            const title = document.getElementById('briefing-title');
-            const content = document.getElementById('briefing-content');
-            screen.style.display = 'block';
-
-            if (modeKey === 'level1') {
-                title.innerText = "Briefing: Scherp & Stomp";
-                content.innerHTML = `
-                    <div style="text-align:center">
-                        <h3 style="color:#2ecc71">Scherp (< 90°)</h3>
-                        <div style="width:50px; height:50px; border-bottom: 4px solid white; border-right: 4px solid white; transform: skewX(20deg); margin: 0 auto;"></div>
-                    </div>
-                    <div style="text-align:center">
-                        <h3 style="color:#e67e22">Stomp (> 90°)</h3>
-                        <div style="width:50px; height:50px; border-bottom: 4px solid white; border-left: 4px solid white; transform: skewX(-20deg); margin: 0 auto;"></div>
-                    </div>
-                `;
-            } else if (modeKey === 'level2') {
-                title.innerText = "Briefing: Recht & Gestrekt";
-                content.innerHTML = `
-                    <div style="text-align:center">
-                        <h3 style="color:#3498db">Recht (= 90°)</h3>
-                        <div style="width:40px; height:40px; border-bottom: 4px solid white; border-left: 4px solid white; margin: 10px auto;"></div>
-                    </div>
-                    <div style="text-align:center">
-                        <h3 style="color:#9b59b6">Gestrekt (= 180°)</h3>
-                        <div style="width:60px; height:4px; background: white; margin: 30px auto;"></div>
-                    </div>
-                `;
-            } else if (modeKey === 'level3') {
-                title.innerText = "Briefing: Driehoeken";
-                content.innerHTML = `
-                     <div style="text-align:center"><h3 style="color:#f1c40f">Gelijkzijdig</h3></div>
-                     <div style="text-align:center"><h3 style="color:#e67e22">Gelijkbenig</h3></div>
-                     <div style="text-align:center"><h3 style="color:#3498db">Rechthoekig</h3></div>
-                `;
-            }
-        }
-
-        function startGame(modeKey) {
-            currentMode = GAME_MODES[modeKey];
-            currentTypes = currentMode.types;
-
-            score = 0;
-            lives = 4;
-            hasWon = false;
-            isGameOver = false;
-            enemies = [];
-            bullets = [];
-            particles = [];
-
-            document.getElementById('score').innerText = "0";
-            document.getElementById('lives').innerText = "Levens: ❤️❤️❤️❤️";
-            document.getElementById('target-ui').innerText = WIN_SCORE;
-
-            document.getElementById('instruction-screen').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block';
-            document.getElementById('ui').style.display = 'flex';
-            document.getElementById('level-complete').style.display = 'none';
-            document.getElementById('game-over').style.display = 'none';
-
-            // Show touch controls if on mobile/touch logic needed? 
-            // We just let CSS handle visibility, but can ensure container is visible
-            // document.getElementById('touch-controls').style.display = 'flex'; // Handled by CSS media query in real world, or force it for now?
-            
-            setupUIButtons();
-            player.type = 'type1';
-            switchWeapon('type1');
-
-            if (!isRunning) {
-                isRunning = true;
-                animate();
-            }
-        }
-
-        function restartGame() {
-            startGame(currentModeKey);
-        }
-
-        function continuePlaying() {
-            document.getElementById('level-complete').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block';
-            isGameOver = false;
-            hasWon = true; // Prevent re-triggering win
-            document.getElementById('target-ui').innerText = "∞"; // Infinite mode
-        }
-
-        function returnToMenu() {
-            document.getElementById('game-over').style.display = 'none';
-            document.getElementById('level-complete').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'none';
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'block';
-            isGameOver = true;
-            updateMenu();
-        }
-
-        function setupUIButtons() {
-            for (let j = 1; j <= 4; j++) {
-                const el = document.getElementById('ui-' + j);
-                if(el) el.style.display = 'none';
-            }
-
-            let i = 1;
-            for (let key in currentTypes) {
-                let el = document.getElementById('ui-' + i);
-                if(el) {
-                    let data = currentTypes[key];
-                    el.innerText = i + ". " + data.label;
-                    el.style.backgroundColor = data.color;
-                    el.style.color = '#000';
-                    el.style.display = 'block';
-                    i++;
-                }
-            }
-        }
-
-        function updateMenu() {
-            if (userProgress >= 2) {
-                let btn2 = document.getElementById('btn-lvl2');
-                btn2.classList.remove('locked');
-                btn2.innerText = "2. Versterking (Alle Hoeken)";
-                addHighscoreSpan(btn2, 2);
-            }
-            if (userProgress >= 3) {
-                let btn3 = document.getElementById('btn-lvl3');
-                btn3.classList.remove('locked');
-                btn3.innerText = "3. Driehoeken";
-                addHighscoreSpan(btn3, 3);
-            }
-            
-            if (highscores[1] > 0) document.getElementById('hs-1').innerText = `🏆 ${highscores[1]}`;
-            if (highscores[2] > 0 && document.getElementById('hs-2')) document.getElementById('hs-2').innerText = `🏆 ${highscores[2]}`;
-            if (highscores[3] > 0 && document.getElementById('hs-3')) document.getElementById('hs-3').innerText = `🏆 ${highscores[3]}`;
-        }
-
-        function addHighscoreSpan(btn, id) {
-            // Helper to just append highscore if not exists
-        }
-
-        function resetProgress() {
-            if (confirm("Weet je zeker dat je alle voortgang wilt wissen?")) {
-                localStorage.setItem('geoDefenderProgress', 1);
-                localStorage.setItem('geoDefenderHighscores', JSON.stringify({ 1: 0, 2: 0, 3: 0 }));
-                location.reload();
-            }
-        }
-
-        /* --- LOGGING --- */
-        function logScore(finalScore) {
-            // GET request to Google Script
-            // ?action=submit&code=[pseudoniem]&quizId=Game1_Space&score=[punten]&total=150
-            const url = `${LOGGING_URL}?action=submit&code=${encodeURIComponent(playerName)}&quizId=Game1_Space&score=${finalScore}&total=${WIN_SCORE}`;
-            
-            console.log("Logging to:", url);
-            
-            fetch(url)
-            .then(response => {
-                if(response.ok) console.log("Score logged successfully.");
-                else console.warn("Score logging failed.");
-            })
-            .catch(err => console.error("Error logging score:", err));
-        }
-
-        /* --- GAME LOOP --- */
-        function animate() {
-            if (isGameOver) { 
-                // Stop loop if game over
-                return; 
-            }
-
-            difficultyFactor = score / 500;
-            
-            // Clear & BG
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Stars
-            let starSpeedMult = 1 + (difficultyFactor * 4);
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            // Draw Stars
+            ctx.fillStyle = "white";
             stars.forEach(s => {
-                s.y += s.speed * starSpeedMult;
-                if (s.y > canvas.height) {
-                    s.y = 0; s.x = Math.random() * canvas.width;
-                }
-                ctx.fillRect(s.x, s.y, s.size, s.size + (difficultyFactor * 10));
+                s.y += s.speed;
+                if (s.y > 600) { s.y = 0; s.x = Math.random() * 800; }
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+                ctx.globalAlpha = 1;
             });
 
-            // Player Movement
-            if ((keys['ArrowLeft'] || keys['KeyA'] || touchLeft) && player.x > 0) player.x -= 7;
-            if ((keys['ArrowRight'] || keys['KeyD'] || touchRight) && player.x < canvas.width - player.width) player.x += 7;
+            // Player Logic
+            if (keys.ArrowLeft || touchLeft) player.x -= 6;
+            if (keys.ArrowRight || touchRight) player.x += 6;
+            if (player.x < 0) player.x = 0;
+            if (player.x > 760) player.x = 760;
 
             // Draw Player
-            ctx.fillStyle = player.color;
+            ctx.fillStyle = TYPES[player.typeIdx].color;
             ctx.beginPath();
-            ctx.moveTo(player.x + player.width / 2, player.y);
-            ctx.lineTo(player.x + player.width, player.y + player.height);
-            ctx.lineTo(player.x + player.width / 2, player.y + player.height - 10);
-            ctx.lineTo(player.x, player.y + player.height);
+            ctx.moveTo(player.x + 20, player.y);
+            ctx.lineTo(player.x + 40, player.y + 40);
+            ctx.lineTo(player.x + 20, player.y + 30);
+            ctx.lineTo(player.x, player.y + 40);
             ctx.fill();
 
             // Bullets
             for (let i = 0; i < bullets.length; i++) {
-                let b = bullets[i]; b.y -= b.speed;
-                ctx.fillStyle = b.color; ctx.fillRect(b.x - 3, b.y, 6, 12);
-                if (b.y < 0) { bullets.splice(i, 1); i--; }
+                let b = bullets[i];
+                b.y -= 8;
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x - 3, b.y, 6, 12);
+                if (b.y < -20) { bullets.splice(i, 1); i--; }
+            }
+
+            // Enemies Spawning
+            let spawnChance = 0.02 + (difficulty * 0.01);
+            if (Math.random() < spawnChance) {
+                spawnEnemy();
+            }
+
+            // Enemies Update
+            for (let i = 0; i < enemies.length; i++) {
+                let e = enemies[i];
+                e.y += e.speed;
+
+                // Draw Logic
+                drawEnemy(e);
+
+                // Collision Bullet
+                for (let j = 0; j < bullets.length; j++) {
+                    let b = bullets[j];
+                    // Simple AABB
+                    if (b.x > e.x && b.x < e.x + e.size && b.y > e.y && b.y < e.y + e.size) {
+                        if (b.typeIdx === e.typeIdx) {
+                            // CORRECT
+                            score += 10;
+                            playSound(600, 'sine');
+                            createParticles(e.x + 25, e.y + 25, TYPES[e.typeIdx].color);
+                            enemies.splice(i, 1); bullets.splice(j, 1);
+                            i--; j--;
+
+                            // CHECK WIN HERE
+                            if (score >= TARGET_SCORE) {
+                                handleWin();
+                                return;
+                            }
+
+                        } else {
+                            // WRONG AMMO
+                            score -= 5;
+                            if (score < 0) score = 0;
+                            bullets.splice(j, 1); j--;
+                            playSound(150, 'sawtooth');
+                        }
+                        break; // break bullet loop
+                    }
+                }
+
+                // Collision Floor
+                if (i >= 0 && enemies[i] && enemies[i].y > 600) {
+                    enemies.splice(i, 1); i--;
+                    lives--;
+                    playSound(100, 'sawtooth');
+                    if (lives <= 0) {
+                        handleGameOver();
+                        return;
+                    }
+                }
             }
 
             // Particles
             for (let i = 0; i < particles.length; i++) {
-                particles[i].x += particles[i].sx;
-                particles[i].y += particles[i].sy;
-                particles[i].life -= 0.05;
-                ctx.fillStyle = particles[i].color;
-                ctx.globalAlpha = Math.max(0, particles[i].life);
-                ctx.beginPath(); ctx.arc(particles[i].x, particles[i].y, 3, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1.0;
-                if (particles[i].life <= 0) { particles.splice(i, 1); i--; }
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if (p.life <= 0) { particles.splice(i, 1); i--; continue; }
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 6.28); ctx.fill();
+                ctx.globalAlpha = 1;
             }
 
-            // Enemy Spawning
-            let spawnRate = Math.max(30, 90 - (difficultyFactor * 50));
-            if (gameFrame % Math.floor(spawnRate) === 0) enemies.push(new Enemy());
+            // HUD Drawing (Fixed y=40)
+            ctx.font = "bold 24px Segoe UI";
+            ctx.textAlign = "left";
+            ctx.fillStyle = "white";
+            ctx.fillText(`Score: ${score} / ${TARGET_SCORE}`, 20, 40);
 
-            // Enemies Update & Collision
-            for (let i = 0; i < enemies.length; i++) {
-                let e = enemies[i]; e.update(); e.draw();
-
-                // Bullet Collision
-                for (let j = 0; j < bullets.length; j++) {
-                    let b = bullets[j];
-                    if (b.x > e.x && b.x < e.x + e.size && b.y > e.y && b.y < e.y + e.size) {
-                        if (b.type === e.typeKey) {
-                            // Hit!
-                            score += 10;
-                            playSound('hit');
-                            createParticles(e.x + e.size/2, e.y + e.size/2, e.data.color);
-                            enemies.splice(i, 1); bullets.splice(j, 1);
-                            i--; j--;
-                            document.getElementById('score').innerText = score;
-                            checkWin();
-                        } else {
-                            // Wrong ammo
-                            score = Math.max(0, score - 5);
-                            playSound('damage');
-                            bullets.splice(j, 1); j--;
-                            document.getElementById('score').innerText = score;
-                        }
-                        break;
-                    }
-                }
-
-                // Bottom Collision
-                if (e.y > canvas.height) {
-                    enemies.splice(i, 1); i--;
-                    lives--;
-                    playSound('damage');
-                    document.getElementById('lives').innerText = "Levens: " + "❤️".repeat(lives);
-                    if (lives <= 0) handleGameOver();
-                }
-            }
-
-            gameFrame++;
-            requestAnimationFrame(animate);
+            ctx.textAlign = "right";
+            let hearts = "";
+            for (let k = 0; k < lives; k++) hearts += "❤️";
+            ctx.fillText(hearts, 780, 40);
         }
 
-        function checkWin() {
-            if (!hasWon && score >= WIN_SCORE) {
-                // Determine if this logic applies
-                hasWon = true; 
-                playSound('win');
-                
-                // Show Unlock Code
-                document.getElementById('level-complete').style.display = 'block';
-                document.getElementById('win-score').innerText = score;
-                document.getElementById('unlock-code-display').style.display = 'block';
-                document.getElementById('unlock-message').style.display = 'block';
+        function spawnEnemy() {
+            let typeIdx = Math.random() < 0.5 ? 0 : 1;
+            let type = TYPES[typeIdx];
+            let angle = Math.floor(Math.random() * (type.max - type.min) + type.min);
 
-                // Log Score
-                logScore(score);
-
-                // Save Highscore
-                if (score > highscores[currentMode.id]) {
-                    highscores[currentMode.id] = score;
-                    localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
-                }
-                
-                // Unlock next level
-                if (currentMode.id >= userProgress) {
-                    let next = Math.min(3, currentMode.id + 1);
-                    localStorage.setItem('geoDefenderProgress', next);
-                }
-
-                // Pause loop
-                isGameOver = true; 
-            }
+            enemies.push({
+                x: Math.random() * 740 + 10,
+                y: -60,
+                size: 50,
+                speed: 1.5 + difficulty,
+                typeIdx: typeIdx,
+                angle: angle
+            });
         }
 
-        function handleGameOver() {
-            isGameOver = true;
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over').style.display = 'block';
-            playSound('damage');
+        function drawEnemy(e) {
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 3;
+            // Draw Base angle (simplified visualisation)
+            ctx.beginPath();
 
-            // Save Highscore check
-            if (score > highscores[currentMode.id]) {
-                highscores[currentMode.id] = score;
-                localStorage.setItem('geoDefenderHighscores', JSON.stringify(highscores));
-            }
-            logScore(score);
+            // Base line horizontal
+            ctx.moveTo(e.x + 50, e.y + 50);
+            ctx.lineTo(e.x, e.y + 50);
+
+            // Angle line
+            let rad = (e.angle * Math.PI) / 180;
+            // X = cos(a), Y = -sin(a) (because Y up is negative in standard math, but here 0 is top)
+            // Actually standard HTML canvas y grows down. So 0 degrees is usually Right (1,0).
+            // We want angle opening from right-to-left.
+            // Let's keep it simple: Draw line from (x, y+50) to computed point
+            let x2 = e.x + Math.cos(rad) * 50;
+            let y2 = (e.y + 50) - Math.sin(rad) * 50;
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arc
+            ctx.beginPath();
+            ctx.arc(e.x, e.y + 50, 15, 0, -rad, true);
+            ctx.stroke();
+
+            // Text (Angle value optional, maybe too easy? disable for now)
+            // ctx.fillStyle = "#aaa"; ctx.textAlign="center"; ctx.fillText(e.angle+"°", e.x+25, e.y);
         }
 
         function createParticles(x, y, color) {
-            for(let i=0; i<8; i++) {
+            for (let i = 0; i < 10; i++) {
                 particles.push({
                     x: x, y: y,
-                    sx: (Math.random() - 0.5) * 5,
-                    sy: (Math.random() - 0.5) * 5,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
                     life: 1.0,
                     color: color
                 });
             }
         }
 
-        class Enemy {
-            constructor() {
-                this.size = 50;
-                this.x = Math.random() * (canvas.width - this.size - 20) + 10;
-                this.y = -60;
-                this.speed = (Math.random() * 1.5 + 1) + (difficultyFactor * 3);
-                
-                const keys = Object.keys(currentTypes);
-                this.typeKey = keys[Math.floor(Math.random() * keys.length)];
-                this.data = currentTypes[this.typeKey];
-                
-                // Logic generation
-                if (this.data.logic === 'angle') {
-                    if (this.data.min === this.data.max) this.angle = this.data.min;
-                    else this.angle = Math.floor(Math.random() * (this.data.max - this.data.min + 1) + this.data.min);
-                } else if (this.data.logic.startsWith('triangle_')) {
-                    this.p1 = { x: 0, y: 0 }; this.p2 = { x: 0, y: this.size }; this.p3 = { x: this.size, y: this.size };
-                    if (this.data.logic === 'triangle_eq') { this.p1.x = this.size / 2; this.p1.y = 0; }
-                    else if (this.data.logic === 'triangle_iso') {
-                        this.p1.x = this.size / 2;
-                        this.p1.y = this.size - (Math.random() * this.size * 1.5 + 20);
-                    }
-                    else if (this.data.logic === 'triangle_right') {
-                        this.p1.x = (Math.random() < 0.5) ? 0 : this.size; 
-                        this.p1.y = this.size - (Math.random() * this.size + 10);
-                    }
-                    else if (this.data.logic === 'triangle_random') {
-                        this.p1.x = this.size * 0.3; 
-                        this.p1.y = 10;
-                    }
-                }
-            }
-            update() { this.y += this.speed; }
-            draw() {
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
-                if (this.data.logic === 'angle') {
-                    ctx.beginPath();
-                    ctx.moveTo(this.x + this.size, this.y + this.size); // base right
-                    ctx.lineTo(this.x, this.y + this.size); // corner
-                    // Calculate arm
-                    const rad = (this.angle * Math.PI) / 180;
-                    ctx.lineTo(this.x + Math.cos(rad) * this.size, (this.y + this.size) - Math.sin(rad) * this.size);
-                    ctx.stroke();
-                    // Arc
-                    ctx.beginPath(); ctx.arc(this.x, this.y + this.size, 15, 0, -rad, true); ctx.stroke();
-                } else {
-                    // Triangle
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-                    ctx.beginPath();
-                    ctx.moveTo(this.p1.x, this.p1.y);
-                    ctx.lineTo(this.p2.x, this.p2.y);
-                    ctx.lineTo(this.p3.x, this.p3.y);
-                    ctx.closePath();
-                    ctx.stroke();
-                    if (this.data.logic === 'triangle_right') {
-                         ctx.lineWidth = 1; ctx.beginPath();
-                         if(this.p1.x===0) ctx.rect(0, this.size-10, 10, 10);
-                         else ctx.rect(this.size-10, this.size-10, 10, 10);
-                         ctx.stroke();
-                    }
-                    ctx.restore();
-                }
-            }
+        /* --- GAME END HANDLERS --- */
+
+        function handleWin() {
+            stopGameLoop(); // FREEZE
+            playSound(500, 'sine'); // Victory beep
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('win-screen').style.display = 'block';
+
+            logData(score);
         }
 
-        /* --- AUDIO --- */
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
+        function handleGameOver() {
+            stopGameLoop();
+            playSound(100, 'sawtooth');
 
-            if (type === 'shoot') {
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'hit') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'damage') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.linearRampToValueAtTime(50, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'win') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
-                osc.frequency.linearRampToValueAtTime(800, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            }
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over').style.display = 'block';
+
+            logData(score);
+        }
+
+        function logData(finalScore) {
+            // FIRE AND FORGET
+            console.log("Logging...");
+            const url = `${LOG_URL}?action=submit&code=${encodeURIComponent(playerName)}&quizId=Game1_Space&score=${finalScore}&total=${TARGET_SCORE}`;
+            fetch(url, { mode: 'no-cors' }).then(() => console.log("Sent")).catch(e => console.log(e));
+        }
+
+        /* --- AUDIO UTIL --- */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } catch (e) { }
         }
 
     </script>
 </body>
+
 </html>
